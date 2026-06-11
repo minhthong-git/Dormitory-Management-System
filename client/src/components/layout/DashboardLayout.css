@@ -1,0 +1,43 @@
+/* ================================================================
+   DashboardLayout.css — Root shell for the DMS app
+   ================================================================ */
+
+/* ── Main layout shell ───────────────────────────────────────── */
+.dms-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #071028;
+}
+
+/* ── Body (header + content) ─────────────────────────────────── */
+.dms-layout__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* prevent flex blowout */
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--sidebar-transition, 0.25s cubic-bezier(0.4,0,0.2,1));
+}
+
+.dms-layout--collapsed .dms-layout__body {
+  margin-left: var(--sidebar-width-collapsed);
+}
+
+/* ── Main content area ───────────────────────────────────────── */
+.dms-layout__main {
+  flex: 1;
+  padding: 92px 28px 32px; /* 64px header + 28px gap */
+  min-height: 100vh;
+  outline: none;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dms-layout__body {
+    margin-left: 0 !important;
+  }
+
+  .dms-layout__main {
+    padding: 80px 16px 24px;
+  }
+}

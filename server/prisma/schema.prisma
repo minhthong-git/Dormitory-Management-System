@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// ── NOTE: SQL Server không hỗ trợ enum trong Prisma ──────────────
+// Dùng String + @default + check constraint bằng code/middleware
+
+// ── Models ─────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  fullName  String
+  studentId String?  @unique
+  phone     String?
+  avatarUrl String?
+  /// Allowed values: STUDENT | STAFF | ADMIN
+  role             String    @default("STUDENT")
+  /// Allowed values: ACTIVE | PENDING | REJECTED | BANNED
+  status           String    @default("ACTIVE")
+  failedLoginCount    Int       @default(0)
+  lockedUntil         DateTime?
+  verificationToken   String?
+  verificationExpires DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  contracts Contract[]
+
+  @@map("users")
+}
+
+model Room {
+  id               String   @id @default(uuid())
+  roomNumber       String   @unique
+  floor            Int
+  capacity         Int
+  currentOccupancy Int      @default(0)
+  /// Allowed values: SINGLE | DOUBLE | QUAD
+  type             String
+  /// Allowed values: AVAILABLE | FULL | MAINTENANCE
+  status           String   @default("AVAILABLE")
+  pricePerMonth    Float
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  contracts Contract[]
+
+  @@map("rooms")
+}
+
+model Contract {
+  id        String   @id @default(uuid())
+  userId    String
+  roomId    String
+  startDate DateTime
+  endDate   DateTime
+  /// Allowed values: ACTIVE | EXPIRED | TERMINATED
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  room     Room      @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoices Invoice[]
+
+  @@map("contracts")
+}
+
+model Invoice {
+  id         String    @id @default(uuid())
+  contractId String
+  amount     Float
+  dueDate    DateTime
+  paidAt     DateTime?
+  /// Allowed values: PENDING | PAID | OVERDUE
+  status     String    @default("PENDING")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("invoices")
+}
