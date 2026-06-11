@@ -6,7 +6,10 @@ export const authApi = {
     axiosClient.post<ApiResponse<AuthResponse>>('/auth/login', payload),
 
   register: (payload: RegisterPayload) =>
-    axiosClient.post<ApiResponse<AuthResponse>>('/auth/register', payload),
+    axiosClient.post<ApiResponse<{ email: string }>>('/auth/register', payload),
+
+  verifyEmail: (payload: { email: string; otp: string }) =>
+    axiosClient.post<ApiResponse<null>>('/auth/verify-email', payload),
 
   logout: () => axiosClient.post<ApiResponse<null>>('/auth/logout'),
 

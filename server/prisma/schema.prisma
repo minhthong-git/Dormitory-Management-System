@@ -21,9 +21,15 @@ model User {
   phone     String?
   avatarUrl String?
   /// Allowed values: STUDENT | STAFF | ADMIN
-  role      String   @default("STUDENT")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role             String    @default("STUDENT")
+  /// Allowed values: ACTIVE | PENDING | REJECTED | BANNED
+  status           String    @default("ACTIVE")
+  failedLoginCount    Int       @default(0)
+  lockedUntil         DateTime?
+  verificationToken   String?
+  verificationExpires DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   contracts Contract[]
 

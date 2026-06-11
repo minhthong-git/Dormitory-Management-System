@@ -61,11 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
-    const { data } = await authApi.register(payload);
-    const { accessToken, refreshToken, user: newUser } = data.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(newUser);
+    // Chỉ gọi API để tạo user và gửi email OTP, không lưu token đăng nhập ở đây
+    await authApi.register(payload);
   }, []);
 
   const logout = useCallback(async () => {

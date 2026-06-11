@@ -12,6 +12,9 @@ export interface JwtPayload {
 // ── User Role (phải khớp với giá trị String trong DB) ─────────
 export type UserRole = 'STUDENT' | 'STAFF' | 'ADMIN';
 
+// ── User Status ────────────────────────────────────────────────
+export type UserStatus = 'ACTIVE' | 'PENDING' | 'REJECTED' | 'BANNED';
+
 // ── Room enums (string literals, không phải Prisma enum) ───────
 export type RoomType = 'SINGLE' | 'DOUBLE' | 'QUAD';
 export type RoomStatus = 'AVAILABLE' | 'FULL' | 'MAINTENANCE';

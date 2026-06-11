@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { register, login, refresh, logout, getMe } from '@/controllers/auth.controller';
+import { register, login, refresh, logout, getMe, verifyEmail } from '@/controllers/auth.controller';
 import { verifyJWT } from '@/middleware/auth';
 
 const router = Router();
@@ -27,6 +27,9 @@ const loginValidation = [
 
 // POST   /api/auth/register
 router.post('/register', registerValidation, register);
+
+// POST   /api/auth/verify-email
+router.post('/verify-email', verifyEmail);
 
 // POST   /api/auth/login
 router.post('/login', loginValidation, login);
