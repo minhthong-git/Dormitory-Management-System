@@ -1,5 +1,15 @@
 import axiosClient from './axiosClient';
-import type { AuthResponse, LoginPayload, RegisterPayload, ApiResponse, User } from '@/types';
+import type {
+  AuthResponse,
+  LoginPayload,
+  RegisterPayload,
+  ApiResponse,
+  User,
+  UpdateProfilePayload,
+  ChangePasswordPayload,
+  ForgotPasswordPayload,
+  ResetPasswordPayload
+} from '@/types';
 
 export const authApi = {
   login: (payload: LoginPayload) =>
@@ -17,4 +27,17 @@ export const authApi = {
     axiosClient.post<{ accessToken: string }>('/auth/refresh', { refreshToken }),
 
   getMe: () => axiosClient.get<ApiResponse<User>>('/auth/me'),
+
+  updateProfile: (payload: UpdateProfilePayload) =>
+    axiosClient.put<ApiResponse<User>>('/auth/me', payload),
+
+  changePassword: (payload: ChangePasswordPayload) =>
+    axiosClient.patch<ApiResponse<null>>('/auth/me/password', payload),
+
+  forgotPassword: (payload: ForgotPasswordPayload) =>
+    axiosClient.post<ApiResponse<null>>('/auth/forgot-password', payload),
+
+  resetPassword: (payload: ResetPasswordPayload) =>
+    axiosClient.post<ApiResponse<null>>('/auth/reset-password', payload),
 };
+
