@@ -104,3 +104,29 @@ export interface ApiError {
   message: string;
   errors?: Record<string, string>;
 }
+
+// ============================================================
+// Payload Types
+// ============================================================
+
+export interface UpdateProfilePayload {
+  fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordPayload {
+  oldPassword?: string;
+  newPassword?: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  otp: string;
+  newPassword?: string;
+}
+

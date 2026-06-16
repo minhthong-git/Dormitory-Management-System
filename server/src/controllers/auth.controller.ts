@@ -4,7 +4,7 @@ import { hashPassword, comparePassword } from '@/utils/bcrypt';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/utils/jwt';
 import { sendSuccess } from '@/utils/response';
 import { AppError } from '@/middleware/errorHandler';
-import { sendVerificationEmail } from '@/utils/mailer';
+import { sendVerificationEmail, sendResetPasswordEmail } from '@/utils/mailer';
 import type { UserRole } from '@/types';
 
 // ── Cấu hình Brute Force ────────────────────────────────────────
@@ -252,3 +252,161 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
     next(err);
   }
 };
+
+// ── PUT /api/auth/me (Cập nhật hồ sơ cá nhân) ─────────────────────
+export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) throw new AppError('Không xác định được người dùng', 401);
+
+    const { fullName, phone, avatarUrl } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('Người dùng không tồn tại', 404);
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { fullName, phone, avatarUrl },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        studentId: true,
+        phone: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    sendSuccess(res, updated, 'Cập nhật hồ sơ cá nhân thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /api/auth/me/password (Người dùng tự đổi mật khẩu) ───────
+export const changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.sub;
+    if (!userId) throw new AppError('Không xác định được người dùng', 401);
+
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      throw new AppError('Mật khẩu cũ và mật khẩu mới là bắt buộc', 400);
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('Người dùng không tồn tại', 404);
+
+    const isMatch = await comparePassword(oldPassword, user.password);
+    if (!isMatch) {
+      throw new AppError('Mật khẩu cũ không chính xác', 400);
+    }
+
+    const hashed = await hashPassword(newPassword);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    sendSuccess(res, null, 'Đổi mật khẩu thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── POST /api/auth/forgot-password (Quên mật khẩu - gửi OTP) ────────
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) throw new AppError('Email là bắt buộc', 400);
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Để tránh timing attack phân biệt email tồn tại hay không,
+    // ta chạy các bước hash và delay giả lập cho email không tồn tại.
+    if (!user) {
+      // Giả lập thời gian bằng cách hash một chuỗi rác
+      await hashPassword('dummy_password');
+      // Trả về 200 thành công giả
+      sendSuccess(res, null, 'Nếu email tồn tại trên hệ thống, mã OTP đã được gửi về email của bạn');
+      return;
+    }
+
+    // Rate Limit: Kiểm tra khoảng cách gửi OTP gần nhất (60 giây)
+    const now = new Date();
+    if (user.resetPasswordLastSent) {
+      const diffMs = now.getTime() - new Date(user.resetPasswordLastSent).getTime();
+      if (diffMs < 60 * 1000) {
+        const secondsLeft = Math.ceil((60 * 1000 - diffMs) / 1000);
+        throw new AppError(`Vui lòng đợi ${secondsLeft} giây trước khi yêu cầu mã OTP mới`, 429);
+      }
+    }
+
+    // Sinh OTP ngẫu nhiên 6 chữ số
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Mã hoá OTP bằng bcrypt trước khi lưu vào DB
+    const hashedOtp = await hashPassword(otp);
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedOtp,
+        resetPasswordExpires: otpExpires,
+        resetPasswordLastSent: now,
+      },
+    });
+
+    // Gửi email chứa mã OTP
+    await sendResetPasswordEmail(email, otp);
+
+    sendSuccess(res, null, 'Nếu email tồn tại trên hệ thống, mã OTP đã được gửi về email của bạn');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── POST /api/auth/reset-password (Quên mật khẩu - xác nhận OTP & mật khẩu mới) ──
+export const resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      throw new AppError('Email, mã OTP và mật khẩu mới là bắt buộc', 400);
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.resetPasswordToken || !user.resetPasswordExpires) {
+      throw new AppError('Yêu cầu khôi phục mật khẩu không hợp lệ', 400);
+    }
+
+    // Kiểm tra hết hạn
+    if (new Date(user.resetPasswordExpires) < new Date()) {
+      throw new AppError('Mã OTP đã hết hạn', 400);
+    }
+
+    // So sánh OTP
+    const isOtpMatch = await comparePassword(otp, user.resetPasswordToken);
+    if (!isOtpMatch) {
+      throw new AppError('Mã OTP không chính xác', 400);
+    }
+
+    // Mã hoá mật khẩu mới và reset token
+    const hashedPass = await hashPassword(newPassword);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPass,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    sendSuccess(res, null, 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.');
+  } catch (err) {
+    next(err);
+  }
+};
+
