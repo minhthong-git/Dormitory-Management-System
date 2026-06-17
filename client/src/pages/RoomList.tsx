@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import '../BuildingList.css'; 
+import { useParams, useNavigate } from 'react-router-dom';
+import './BuildingList.css'; 
 
-export default function AdminRoomsPage() {
+export default function RoomList() {
+  const { buildingId } = useParams(); 
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState<any[]>([]);
-  const [buildings, setBuildings] = useState<any[]>([]);
-  
+
   // State quản lý Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null); // null: Thêm mới, String: Đang sửa
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     roomNumber: '',
-    buildingId: '',
     type: 'SINGLE',
     capacity: 1,
     pricePerMonth: 0,
@@ -22,10 +23,9 @@ export default function AdminRoomsPage() {
 
   const token = localStorage.getItem('accessToken');
 
-  // Lấy danh sách phòng
-  const fetchAllRooms = async () => {
+  const fetchRooms = async () => {
     try {
-      const response = await fetch('/api/rooms', {
+      const response = await fetch(`/api/rooms?buildingId=${buildingId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
@@ -42,36 +42,15 @@ export default function AdminRoomsPage() {
     }
   };
 
-  // Lấy danh sách Tòa nhà
-  const fetchBuildings = async () => {
-    try {
-      const response = await fetch('/api/buildings');
-      const result = await response.json();
-      if (result.success && result.data.length > 0) {
-        setBuildings(result.data);
-      }
-    } catch (error) {
-      console.error('Lỗi lấy danh sách tòa nhà:', error);
-    }
-  };
-
   useEffect(() => {
-    fetchAllRooms();
-    fetchBuildings();
-  }, []);
+    if (buildingId) fetchRooms();
+  }, [buildingId]);
 
   // Mở modal thêm mới
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
-      roomNumber: '',
-      buildingId: buildings[0]?.id || '',
-      type: 'SINGLE',
-      capacity: 1,
-      pricePerMonth: 0,
-      floor: 1,
-      description: '',
-      status: 'AVAILABLE'
+      roomNumber: '', type: 'SINGLE', capacity: 1, pricePerMonth: 0, floor: 1, description: '', status: 'AVAILABLE'
     });
     setIsModalOpen(true);
   };
@@ -81,7 +60,6 @@ export default function AdminRoomsPage() {
     setEditingId(room.id);
     setFormData({
       roomNumber: room.roomNumber,
-      buildingId: room.buildingId || '',
       type: room.type,
       capacity: room.capacity,
       pricePerMonth: room.pricePerMonth,
@@ -105,7 +83,7 @@ export default function AdminRoomsPage() {
       
       if (response.ok || result.success) {
         alert('Xóa phòng thành công!');
-        fetchAllRooms();
+        fetchRooms();
       } else {
         alert(result.message || 'Không thể xóa phòng này!');
       }
@@ -114,14 +92,9 @@ export default function AdminRoomsPage() {
     }
   };
 
-  // Xử lý Lưu (Thêm mới hoặc Cập nhật)
+  // Xử lý Lưu dữ liệu
   const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.buildingId) {
-      alert('Vui lòng chọn tòa nhà!');
-      return;
-    }
-
     const url = editingId ? `/api/rooms/${editingId}` : '/api/rooms';
     const method = editingId ? 'PUT' : 'POST';
 
@@ -134,6 +107,7 @@ export default function AdminRoomsPage() {
         },
         body: JSON.stringify({
           ...formData,
+          buildingId: buildingId, // Luôn gắn với tòa nhà hiện tại từ URL
           capacity: Number(formData.capacity),
           pricePerMonth: Number(formData.pricePerMonth),
           floor: Number(formData.floor)
@@ -142,14 +116,14 @@ export default function AdminRoomsPage() {
       
       const result = await response.json();
       if (response.ok || result.success) {
-        alert(editingId ? 'Cập nhật thành công!' : 'Thêm phòng thành công!');
+        alert(editingId ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
         setIsModalOpen(false);
-        fetchAllRooms();
+        fetchRooms();
       } else {
         alert(result.message);
       }
     } catch (error) {
-      console.error('Lỗi khi lưu thông tin:', error);
+      console.error('Lỗi lưu thông tin:', error);
     }
   };
 
@@ -157,8 +131,14 @@ export default function AdminRoomsPage() {
     <div className="building-page">
       <div className="building-header" style={{ alignItems: 'flex-start' }}>
         <div>
-          <h1 className="building-title">Quản lý Toàn bộ Phòng</h1>
-          <p style={{ margin: 0, color: '#94a3b8' }}>Xem và quản lý tất cả các phòng trên toàn hệ thống Ký túc xá.</p>
+          <button 
+            onClick={() => navigate('/buildings')} 
+            style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', marginBottom: '8px', padding: 0 }}
+          >
+            &larr; Quay lại danh sách Tòa nhà
+          </button>
+          <h1 className="building-title">Quản lý Phòng (Theo Tòa)</h1>
+          <p style={{ margin: 0, color: '#94a3b8' }}>Danh sách các phòng thuộc tòa nhà này.</p>
         </div>
         <button className="btn-add" onClick={handleOpenAdd}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style={{ marginRight: '8px' }}>
@@ -170,7 +150,7 @@ export default function AdminRoomsPage() {
 
       {rooms.length === 0 ? (
         <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', backgroundColor: '#1e293b', borderRadius: '12px' }}>
-          Hệ thống hiện tại chưa có phòng nào. Hãy thêm phòng mới để bắt đầu!
+          Chưa có phòng nào trong tòa này. Hãy bấm "Thêm Phòng mới"!
         </div>
       ) : (
         <div className="building-grid">
@@ -183,14 +163,6 @@ export default function AdminRoomsPage() {
                 </span>
               </div>
               <div className="card-info">
-                {/* THÊM DÒNG NÀY ĐỂ HIỂN THỊ TÊN TÒA NHÀ */}
-                <div className="info-row">
-                  <span>Tòa nhà:</span>
-                  <span className="info-value" style={{ fontWeight: 'bold', color: '#818cf8' }}>
-                    {buildings.find(b => b.id === room.buildingId)?.name || 'Không xác định'}
-                  </span>
-                </div>
-                
                 <div className="info-row">
                   <span>Loại phòng:</span>
                   <span className="info-value">{room.type || 'Chưa phân loại'}</span>
@@ -211,7 +183,7 @@ export default function AdminRoomsPage() {
                 </div>
               </div>
               <div className="card-actions">
-                <button className="btn-action btn-edit" onClick={() => handleOpenEdit(room)}>Chỉnh sửa</button>
+                <button className="btn-action btn-edit" onClick={() => handleOpenEdit(room)}>Sửa</button>
                 <button className="btn-action btn-delete" onClick={() => handleDeleteRoom(room.id, room.roomNumber)}>Xóa</button>
               </div>
             </div>
@@ -219,7 +191,7 @@ export default function AdminRoomsPage() {
         </div>
       )}
 
-      {/* MODAL THÊM / SỬA PHÒNG */}
+      {/* MODAL THÊM / SỬA PHÒNG THEO TÒA */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px' }}>
@@ -228,56 +200,21 @@ export default function AdminRoomsPage() {
               <button className="btn-close" onClick={() => setIsModalOpen(false)}>&times;</button>
             </div>
             <form onSubmit={handleSaveRoom}>
-              
-              <div className="form-group">
-                <label>Chọn Tòa Nhà</label>
-                <select 
-                  className="form-select"
-                  value={formData.buildingId}
-                  onChange={(e) => setFormData({...formData, buildingId: e.target.value})}
-                  required
-                  disabled={editingId !== null} // Khóa không cho đổi tòa nhà khi đang sửa để tránh lỗi dữ liệu chéo
-                >
-                  <option value="" disabled>-- Chọn tòa nhà --</option>
-                  {buildings.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Số phòng</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.roomNumber}
-                    onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
-                    required 
-                    disabled={editingId !== null} // Thường không nên sửa số phòng khi phòng đã vận hành
-                  />
+                  <input type="text" className="form-input" value={formData.roomNumber} onChange={(e) => setFormData({...formData, roomNumber: e.target.value})} required disabled={editingId !== null} />
                 </div>
                 <div className="form-group">
                   <label>Tầng</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    min="1"
-                    value={formData.floor}
-                    onChange={(e) => setFormData({...formData, floor: Number(e.target.value)})}
-                    required 
-                  />
+                  <input type="number" className="form-input" min="1" value={formData.floor} onChange={(e) => setFormData({...formData, floor: Number(e.target.value)})} required />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Loại phòng</label>
-                  <select 
-                    className="form-select"
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                  >
+                  <select className="form-select" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
                     <option value="SINGLE">Phòng Đơn</option>
                     <option value="DOUBLE">Phòng Đôi</option>
                     <option value="QUAD">Phòng 4 người</option>
@@ -285,37 +222,19 @@ export default function AdminRoomsPage() {
                 </div>
                 <div className="form-group">
                   <label>Sức chứa tối đa</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    min="1"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})}
-                    required 
-                  />
+                  <input type="number" className="form-input" min="1" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})} required />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Giá phòng/Tháng (VNĐ)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    min="0" step="1000"
-                    value={formData.pricePerMonth}
-                    onChange={(e) => setFormData({...formData, pricePerMonth: Number(e.target.value)})}
-                    required 
-                  />
+                  <input type="number" className="form-input" min="0" step="1000" value={formData.pricePerMonth} onChange={(e) => setFormData({...formData, pricePerMonth: Number(e.target.value)})} required />
                 </div>
                 {editingId && (
                   <div className="form-group">
                     <label>Trạng thái</label>
-                    <select 
-                      className="form-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    >
+                    <select className="form-select" value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
                       <option value="AVAILABLE">Còn trống</option>
                       <option value="FULL">Đã đầy</option>
                       <option value="MAINTENANCE">Đang bảo trì</option>

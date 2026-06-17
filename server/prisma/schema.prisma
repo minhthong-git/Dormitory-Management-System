@@ -43,12 +43,18 @@ model Room {
   status           String   @default("AVAILABLE")
   pricePerMonth    Float
   description      String?
+  buildingId       String
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+<<<<<<< HEAD
+  building   Building @relation(fields: [buildingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  contracts  Contract[]
+=======
   contracts       Contract[]
   utilityReadings UtilityReading[]
   invoices        Invoice[]
+>>>>>>> 28d988e67ef7a2b80763a7191a5da0f99c04d156
 
   @@map("rooms")
 }
@@ -98,6 +104,18 @@ model Invoice {
   @@map("invoices")
 }
 
+model Building {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  genderType  String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rooms Room[]
+
+  @@map("buildings")
+}
 model UtilityReading {
   id               String   @id @default(uuid())
   roomId           String

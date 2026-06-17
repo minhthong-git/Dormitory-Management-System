@@ -4,6 +4,8 @@ import { SocketProvider } from '@/context/SocketContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import BuildingList from './pages/BuildingList';
+import RoomList from './pages/RoomList';
 
 // Pages — lazy-loaded cho performance
 import { lazy, Suspense } from 'react';
@@ -68,6 +70,13 @@ function App() {
               </Route>
 
               {/* ── Staff + Admin ──────────────────────────────── */}
+<Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']} />}>
+  <Route element={<DashboardLayout />}>
+    {/* Route quản lý tòa nhà của Member 2 */}
+    <Route path="/buildings" element={<BuildingList />} />
+    <Route path="/buildings/:buildingId/rooms" element={<RoomList />} />
+  </Route>
+</Route>
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']} />}>
                 <Route element={<DashboardLayout />}>
                   <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
