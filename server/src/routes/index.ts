@@ -5,11 +5,13 @@ import contractRoutes from './contract.routes';
 import invoiceRoutes from './invoice.routes';
 import userRoutes from './user.routes';
 import dashboardRoutes from './dashboard.routes';
+import buildingRoutes from './building.routes';
 
 const router = Router();
 
 // ── Mount all API routes ───────────────────────────────────────
 router.use('/auth', authRoutes);
+router.use('/buildings', buildingRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/contracts', contractRoutes);
 router.use('/invoices', invoiceRoutes);

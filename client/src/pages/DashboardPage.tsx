@@ -275,7 +275,7 @@ const StudentStats: React.FC<{ data: StudentDashboardStats; firstName: string }>
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const { stats, isLoading, error, refetch } = useDashboardStats();
-  const firstName = user?.fullName?.split(' ').pop() ?? user?.fullName ?? 'Bạn';
+  const firstName = user?.fullName?.split(' ')?.pop() ?? 'Bạn';
 
   // ── Loading ─────────────────────────────────────────────────
   if (isLoading) {

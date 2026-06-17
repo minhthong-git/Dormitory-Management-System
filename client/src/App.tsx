@@ -3,6 +3,8 @@ import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from '@/context/SocketContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import BuildingList from './pages/BuildingList';
+import RoomList from './pages/RoomList';
 
 // Pages — lazy-loaded cho performance
 import { lazy, Suspense } from 'react';
@@ -56,11 +58,13 @@ function App() {
               </Route>
 
               {/* ── Staff + Admin ──────────────────────────────── */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']} />}>
-                <Route element={<DashboardLayout />}>
-                  {/* thêm route cho staff ở đây */}
-                </Route>
-              </Route>
+<Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']} />}>
+  <Route element={<DashboardLayout />}>
+    {/* Route quản lý tòa nhà của Member 2 */}
+    <Route path="/buildings" element={<BuildingList />} />
+    <Route path="/buildings/:buildingId/rooms" element={<RoomList />} />
+  </Route>
+</Route>
 
               {/* ── 404 ───────────────────────────────────────── */}
               <Route path="*" element={<NotFoundPage />} />

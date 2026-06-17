@@ -51,7 +51,27 @@ async function main() {
     console.log('ℹ️ Tài khoản Sinh viên đã tồn tại.');
   }
 
-  // 3. Tạo phòng mẫu
+  // 3. Tạo tòa nhà mẫu
+  const existingBuilding = await prisma.building.findUnique({
+    where: { name: 'Tòa A' },
+  });
+
+  let buildingA: any;
+  if (!existingBuilding) {
+    buildingA = await prisma.building.create({
+      data: {
+        name: 'Tòa A',
+        genderType: 'MIXED',
+        description: 'Tòa nhà dành cho cả nam và nữ.',
+      },
+    });
+    console.log(`✅ Đã tạo tòa nhà: ${buildingA.name}`);
+  } else {
+    buildingA = existingBuilding;
+    console.log('ℹ️ Tòa nhà Tòa A đã tồn tại.');
+  }
+
+  // 4. Tạo phòng mẫu
   const existingRoom = await prisma.room.findUnique({
     where: { roomNumber: 'P101' },
   });
@@ -66,6 +86,7 @@ async function main() {
         status: 'AVAILABLE',
         pricePerMonth: 1200000,
         description: 'Phòng 4 người tầng 1, đầy đủ tiện nghi.',
+        buildingId: buildingA.id,
       },
     });
     console.log(`✅ Đã tạo phòng mẫu: ${room.roomNumber}`);
