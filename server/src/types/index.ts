@@ -21,6 +21,11 @@ export type RoomStatus = 'AVAILABLE' | 'FULL' | 'MAINTENANCE';
 export type ContractStatus = 'ACTIVE' | 'EXPIRED' | 'TERMINATED';
 export type InvoiceStatus = 'PENDING' | 'PAID' | 'OVERDUE';
 
+export type StudentGender = 'MALE' | 'FEMALE' | 'OTHER';
+export type StudentStatus = 'ACTIVE' | 'INACTIVE';
+
+export type BedStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+
 // ── API Response ───────────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;

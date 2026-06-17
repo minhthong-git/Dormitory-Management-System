@@ -47,6 +47,22 @@ async function main() {
       },
     });
     console.log(`✅ Đã tạo tài khoản Sinh viên: ${student.email}`);
+
+    // Create Student profile linked to user
+    await prisma.student.create({
+      data: {
+        userId: student.id,
+        studentCode: 'SV123456',
+        fullName: 'Nguyễn Văn A',
+        gender: 'MALE',
+        email: student.email,
+        phone: student.phone ?? undefined,
+        faculty: 'CNTT',
+        major: 'Kỹ thuật phần mềm',
+        status: 'ACTIVE',
+      },
+    });
+    console.log('✅ Đã tạo hồ sơ Student liên kết với User');
   } else {
     console.log('ℹ️ Tài khoản Sinh viên đã tồn tại.');
   }

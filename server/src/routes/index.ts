@@ -5,15 +5,19 @@ import contractRoutes from './contract.routes';
 import invoiceRoutes from './invoice.routes';
 import userRoutes from './user.routes';
 import dashboardRoutes from './dashboard.routes';
+import studentRoutes from './student.routes';
+import bedRoutes from './bed.routes';
 
 const router = Router();
 
 // ── Mount all API routes ───────────────────────────────────────
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
+router.use('/beds', bedRoutes);
 router.use('/contracts', contractRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/users', userRoutes);
+router.use('/students', studentRoutes);
 router.use('/dashboard', dashboardRoutes);
 
 // Health check
