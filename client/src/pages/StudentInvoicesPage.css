@@ -1,0 +1,424 @@
+/* ================================================================
+   StudentInvoicesPage.css
+   ================================================================ */
+
+.invoice-student-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1200px;
+}
+
+.invoice-student-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.invoice-student-page__title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.invoice-student-page__subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ── Metrics Cards ───────────────────────────────────────────── */
+.invoice-student-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.student-metric-card {
+  background: #1F2937;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.student-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.student-metric-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.metric-icon {
+  font-size: 1.8rem;
+  opacity: 0.8;
+}
+
+.student-metric-card--alert {
+  border-left: 4px solid var(--color-warning);
+}
+
+.student-metric-card--danger {
+  border-left: 4px solid var(--color-danger);
+}
+
+/* ── Invoice History Card ────────────────────────────────────── */
+.invoice-student-list-card {
+  background: #1F2937;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.invoice-student-list-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 14px;
+}
+
+.invoice-student-list-card__header h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Invoice Grid view */
+.student-invoice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.student-invoice-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.student-invoice-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(91, 95, 239, 0.2);
+}
+
+.student-invoice-item--paid {
+  border-top: 3px solid var(--color-success);
+}
+.student-invoice-item--overdue {
+  border-top: 3px solid var(--color-danger);
+}
+
+.student-invoice-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.invoice-item-title h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.invoice-item-type {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.student-invoice-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.amount-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amount-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.amount-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+.due-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: #64748b;
+  gap: 2px;
+}
+
+.paid-date-info {
+  color: #34d399;
+  font-weight: 500;
+}
+
+.student-invoice-item__footer {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+/* Pagination */
+.student-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 10px;
+}
+
+/* ── Checkout Modal ───────────────────────────────────────────── */
+.payment-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.payment-modal {
+  background: #1F2937;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideUp 0.25s ease-out;
+}
+
+.payment-modal__header {
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-modal__header h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.payment-modal__close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.payment-modal__body {
+  padding: 24px;
+}
+
+.payment-receipt-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.receipt-desc {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.receipt-total {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #818cf8;
+  letter-spacing: -0.5px;
+  background: rgba(129, 140, 248, 0.08);
+  padding: 6px 20px;
+  border-radius: 30px;
+  border: 1px dashed rgba(129, 140, 248, 0.3);
+}
+
+.payment-methods {
+  width: 100%;
+  margin: 10px 0;
+}
+
+.payment-method-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  text-align: left;
+}
+
+.payment-method-item span {
+  font-size: 1.6rem;
+}
+
+.payment-method-item strong {
+  font-size: 0.85rem;
+  color: #fff;
+  display: block;
+}
+
+.payment-method-item p {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+/* Visual QR Code Art */
+.bank-qr-mock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.qr-box {
+  width: 160px;
+  height: 160px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.qr-art {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: radial-gradient(circle, #333 40%, transparent 42%) 0 0/12px 12px,
+              radial-gradient(circle, #333 40%, transparent 42%) 6px 6px/12px 12px;
+  background-color: #fff;
+}
+
+.qr-corner {
+  width: 32px;
+  height: 32px;
+  border: 6px solid #000;
+  position: absolute;
+}
+.qr-corner-tl { top: 0; left: 0; }
+.qr-corner-tr { top: 0; right: 0; }
+.qr-corner-bl { bottom: 0; left: 0; }
+
+.qr-center-logo {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #5B5FEF;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+
+.qr-instructions p {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.qr-sub-text {
+  font-size: 0.72rem !important;
+  color: #64748b !important;
+  margin-top: 2px;
+}
+
+.payment-modal__footer {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Spinner */
+.student-loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.student-error-container,
+.student-empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #64748b;
+  gap: 8px;
+}
+
+.student-empty-container span {
+  font-size: 2.2rem;
+}
+
+@media (max-width: 600px) {
+  .student-invoice-grid {
+    grid-template-columns: 1fr;
+  }
+}

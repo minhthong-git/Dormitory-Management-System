@@ -35,8 +35,4 @@ export const env = {
   // Upload
   MAX_FILE_SIZE_BYTES: parseInt(process.env.MAX_FILE_SIZE_MB ?? '5', 10) * 1024 * 1024,
   UPLOAD_DIR: process.env.UPLOAD_DIR ?? 'uploads',
-
-  // Email Config
-  EMAIL_USER: requireEnv('EMAIL_USER'),
-  EMAIL_PASS: requireEnv('EMAIL_PASS'),
 } as const;

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/config/db';
 import { sendSuccess, sendPaginated } from '@/utils/response';
 import { AppError } from '@/middleware/errorHandler';
+import { notificationService } from '@/services/notification.service';
 
 // ── GET /api/contracts ────────────────────────────────────────
 export const getContracts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -92,6 +93,15 @@ export const createContract = async (req: Request, res: Response, next: NextFunc
       }),
     ]);
 
+    // Trigger notification (fire-and-forget)
+    notificationService.onContractCreated({
+      id: contract.id,
+      userId,
+      roomId,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+    }).catch(() => {});
+
     sendSuccess(res, contract, 'Tạo hợp đồng thành công', 201);
   } catch (err) {
     next(err);
@@ -117,6 +127,9 @@ export const terminateContract = async (req: Request, res: Response, next: NextF
         },
       }),
     ]);
+
+    // Trigger notification (fire-and-forget)
+    notificationService.onContractTerminated(id).catch(() => {});
 
     sendSuccess(res, updated, 'Chấm dứt hợp đồng thành công');
   } catch (err) {

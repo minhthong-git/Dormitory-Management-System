@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import axiosClient from '@/api/axiosClient';
+import { useNotifications } from '@/context/NotificationContext';
 import './Header.css';
 
 interface HeaderProps {
@@ -9,45 +9,44 @@ interface HeaderProps {
   sidebarCollapsed: boolean;
 }
 
-interface PendingInvoice {
-  id: string;
-  amount: number;
-  dueDate: string;
-  status: string;
-  contract?: {
-    room?: { roomNumber: string };
-    user?: { fullName: string };
-  };
-}
+// ── Icon map theo notification type ────────────────────────────
+const notifIconMap: Record<string, string> = {
+  INVOICE_CREATED: '🧾',
+  INVOICE_PAID: '✅',
+  INVOICE_OVERDUE: '⚠️',
+  CONTRACT_CREATED: '📝',
+  CONTRACT_TERMINATED: '🚪',
+  CONTRACT_EXPIRING: '⏰',
+  UTILITY_RECORDED: '💡',
+  PAYMENT_REMINDER: '💳',
+  SYSTEM: '🔔',
+};
+
+const priorityClassMap: Record<string, string> = {
+  LOW: 'info',
+  MEDIUM: 'info',
+  HIGH: 'warning',
+  URGENT: 'warning',
+};
 
 const Header: React.FC<HeaderProps> = ({ onMenuToggle, sidebarCollapsed }) => {
   const { user, logout } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    fetchNotifications,
+    hasMore,
+    currentPage,
+    isLoading,
+  } = useNotifications();
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [pendingInvoices, setPendingInvoices] = useState<PendingInvoice[]>([]);
-  const [notifCount, setNotifCount] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  // ── Fetch pending invoices để hiển thị badge thật ────────────
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const { data } = await axiosClient.get('/invoices', {
-        params: { status: 'PENDING', limit: 5 },
-      });
-      const items: PendingInvoice[] = data.data ?? [];
-      setPendingInvoices(items);
-      setNotifCount(data.pagination?.total ?? items.length);
-    } catch {
-      // silent — không phá layout nếu lỗi
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) fetchNotifications();
-  }, [user, fetchNotifications]);
 
   // ── Close dropdowns on outside click ─────────────────────────
   useEffect(() => {
@@ -68,17 +67,32 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, sidebarCollapsed }) => {
     navigate('/login');
   };
 
+  const handleNotifClick = async (notifId: string, referenceId?: string, referenceType?: string) => {
+    await markAsRead(notifId);
+    // Navigate to the relevant page based on reference type
+    if (referenceType === 'INVOICE' && referenceId) {
+      navigate(`/invoices/${referenceId}`);
+      setNotifOpen(false);
+    } else if (referenceType === 'CONTRACT') {
+      navigate('/dashboard');
+      setNotifOpen(false);
+    }
+  };
+
   const displayName = user?.fullName ?? 'User';
   const avatarChar = displayName.charAt(0).toUpperCase();
 
-  // Format dueDate thành "còn X ngày" hoặc "quá hạn"
-  const formatDue = (dueDate: string) => {
-    const days = Math.ceil(
-      (new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
-    if (days < 0) return `Quá hạn ${Math.abs(days)} ngày`;
-    if (days === 0) return 'Đến hạn hôm nay';
-    return `Còn ${days} ngày`;
+  // Format thời gian tương đối
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Vừa xong';
+    if (mins < 60) return `${mins} phút trước`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} ngày trước`;
+    return new Date(dateStr).toLocaleDateString('vi-VN');
   };
 
   return (
@@ -125,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, sidebarCollapsed }) => {
       {/* Right actions */}
       <div className="dms-header__actions">
 
-        {/* Notifications — hóa đơn PENDING thật */}
+        {/* ══════ NOTIFICATIONS ══════ */}
         <div className="dms-header__dropdown-wrap" ref={notifRef}>
           <button
             id="notifications-btn"
@@ -138,12 +152,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, sidebarCollapsed }) => {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            {notifCount > 0 && (
+            {unreadCount > 0 && (
               <span
                 className="dms-header__notif-badge"
-                aria-label={`${notifCount} hóa đơn chờ thanh toán`}
+                aria-label={`${unreadCount} thông báo chưa đọc`}
               >
-                {notifCount > 99 ? '99+' : notifCount}
+                {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </button>
@@ -151,60 +165,74 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, sidebarCollapsed }) => {
           {notifOpen && (
             <div className="dms-header__dropdown" id="notifications-dropdown" role="menu" aria-label="Thông báo">
               <div className="dms-header__dropdown-header">
-                <span>Hóa đơn chờ thanh toán</span>
-                {notifCount > 0 && (
-                  <span className="dms-header__dropdown-count">{notifCount} chờ TT</span>
+                <span>Thông báo</span>
+                {unreadCount > 0 && (
+                  <button
+                    className="dms-header__mark-all-btn"
+                    onClick={() => markAllAsRead()}
+                  >
+                    Đọc tất cả
+                  </button>
                 )}
               </div>
 
-              {pendingInvoices.length === 0 ? (
+              {notifications.length === 0 ? (
                 <div className="dms-header__notif-empty">
-                  <span>✅</span>
-                  <p>Không có hóa đơn chờ thanh toán</p>
+                  <span>🔔</span>
+                  <p>Không có thông báo nào</p>
                 </div>
               ) : (
                 <ul className="dms-header__notif-list" role="list">
-                  {pendingInvoices.map(inv => {
-                    const isOverdue = new Date(inv.dueDate) < new Date();
+                  {notifications.map(notif => {
+                    const icon = notifIconMap[notif.type] ?? '🔔';
+                    const variant = priorityClassMap[notif.priority] ?? 'info';
                     return (
                       <li
-                        key={inv.id}
-                        className={`dms-header__notif-item dms-header__notif-item--${isOverdue ? 'warning' : 'info'}`}
+                        key={notif.id}
+                        className={`dms-header__notif-item dms-header__notif-item--${variant} ${!notif.isRead ? 'dms-header__notif-item--unread' : ''}`}
                         role="menuitem"
+                        onClick={() => handleNotifClick(notif.id, notif.referenceId, notif.referenceType)}
                       >
-                        <div className="dms-header__notif-dot" aria-hidden="true" />
+                        <div className="dms-header__notif-icon" aria-hidden="true">
+                          {icon}
+                        </div>
                         <div className="dms-header__notif-body">
                           <span className="dms-header__notif-title">
-                            {inv.contract?.room
-                              ? `Phòng ${inv.contract.room.roomNumber}`
-                              : 'Hóa đơn'}
-                            {' — '}
-                            {inv.amount.toLocaleString('vi-VN')} ₫
+                            {notif.title}
+                          </span>
+                          <span className="dms-header__notif-msg">
+                            {notif.message}
                           </span>
                           <span className="dms-header__notif-time">
-                            {formatDue(inv.dueDate)}
+                            {timeAgo(notif.createdAt)}
                           </span>
                         </div>
+                        {!notif.isRead && (
+                          <div className="dms-header__notif-dot" aria-hidden="true" />
+                        )}
                       </li>
                     );
                   })}
                 </ul>
               )}
 
-              <div className="dms-header__dropdown-footer">
-                <button
-                  className="dms-header__dropdown-link"
-                  role="menuitem"
-                  onClick={() => { navigate('/invoices'); setNotifOpen(false); }}
-                >
-                  Xem tất cả hóa đơn
-                </button>
-              </div>
+              {/* Load more */}
+              {hasMore && (
+                <div className="dms-header__dropdown-footer">
+                  <button
+                    className="dms-header__dropdown-link"
+                    onClick={() => fetchNotifications(currentPage + 1)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Đang tải...' : 'Xem thêm'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Profile dropdown */}
+        {/* ══════ PROFILE DROPDOWN ══════ */}
         <div className="dms-header__dropdown-wrap" ref={profileRef}>
           <button
             id="profile-menu-btn"

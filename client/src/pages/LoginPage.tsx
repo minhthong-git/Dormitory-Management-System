@@ -55,7 +55,7 @@ const LoginPage: React.FC = () => {
               onChange={handleChange}
               placeholder="sv@university.edu.vn"
               required
-              autoComplete="off"
+              autoComplete="email"
             />
           </div>
 
@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
               onChange={handleChange}
               placeholder="••••••••"
               required
-              autoComplete="new-password"
+              autoComplete="current-password"
             />
           </div>
 
@@ -82,10 +82,6 @@ const LoginPage: React.FC = () => {
           Chưa có tài khoản?{' '}
           <Link to="/register" className="auth-link">
             Đăng ký
-          </Link>
-          <span style={{ margin: '0 8px', color: 'var(--color-text-muted)' }}>|</span>
-          <Link to="/forgot-password" className="auth-link">
-            Quên mật khẩu?
           </Link>
         </p>
       </div>
