@@ -5,6 +5,8 @@ import contractRoutes from './contract.routes';
 import invoiceRoutes from './invoice.routes';
 import userRoutes from './user.routes';
 import dashboardRoutes from './dashboard.routes';
+import utilityRoutes from './utility.routes';
+import notificationRoutes from './notification.routes';
 
 const router = Router();
 
@@ -15,6 +17,9 @@ router.use('/contracts', contractRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/users', userRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/utilities', utilityRoutes);
+router.use('/notifications', notificationRoutes);
+
 
 // Health check
 router.get('/health', (_req, res) => {

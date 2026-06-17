@@ -1,0 +1,359 @@
+{
+  "info": {
+    "name": "Dormitory Management System - Invoices & Utilities API",
+    "description": "API collection for testing the Invoice & Utility Management Module.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@dormitory.com\",\n  \"password\": \"Password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@dormitory.com\",\n  \"password\": \"Password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Get All Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices?page=1&limit=10&status=UNPAID",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "UNPAID" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "{{invoiceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Manual Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"contractId\": \"{{contractId}}\",\n  \"billingMonth\": 6,\n  \"billingYear\": 2026,\n  \"roomFee\": 1200000,\n  \"electricityFee\": 350000,\n  \"waterFee\": 150000,\n  \"serviceFee\": 50000,\n  \"totalAmount\": 1750000,\n  \"paymentStatus\": \"UNPAID\",\n  \"dueDate\": \"2026-06-25T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices"]
+            }
+          }
+        },
+        {
+          "name": "Update Invoice Payment Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentStatus\": \"PAID\",\n  \"paidDate\": \"2026-06-16T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "{{invoiceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Invoice",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "{{invoiceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Export Invoices to Excel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/export/excel?reportType=history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "export", "excel"],
+              "query": [
+                { "key": "reportType", "value": "history" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Invoice to PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/export/pdf?id={{invoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "export", "pdf"],
+              "query": [
+                { "key": "id", "value": "{{invoiceId}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Utilities",
+      "item": [
+        {
+          "name": "Get All Utility Readings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/utilities?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "utilities"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Reading By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/utilities/{{readingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "utilities", "{{readingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Reading & Auto Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"{{roomId}}\",\n  \"billingMonth\": 6,\n  \"billingYear\": 2026,\n  \"currentElectric\": 1420,\n  \"currentWater\": 445,\n  \"electricPrice\": 3500,\n  \"waterPrice\": 15000,\n  \"serviceFee\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/utilities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "utilities"]
+            }
+          }
+        },
+        {
+          "name": "Update Reading",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentElectric\": 1430,\n  \"currentWater\": 448\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/utilities/{{readingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "utilities", "{{readingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Reading",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/utilities/{{readingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "utilities", "{{readingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Estimate Utility Costs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomFee\": 1200000,\n  \"previousElectric\": 1260,\n  \"currentElectric\": 1420,\n  \"previousWater\": 428,\n  \"currentWater\": 445,\n  \"electricPrice\": 3500,\n  \"waterPrice\": 15000,\n  \"serviceFee\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/utilities/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "utilities", "calculate"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

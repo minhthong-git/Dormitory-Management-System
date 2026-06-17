@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import './Sidebar.css';
 
 /* ── SVG Icon helpers ──────────────────────────────────────────── */
@@ -65,9 +66,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
 }) => {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
-  const navItems = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+  
+  const navItems = React.useMemo(() => {
+    const items = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+    return items.map((item) => {
+      if (item.label === 'Thông báo') {
+        return { ...item, badge: unreadCount };
+      }
+      return item;
+    });
+  }, [isAdmin, unreadCount]);
 
   const handleLogout = async () => {
     await logout();
@@ -156,11 +167,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* ── User Profile ─────────────────────────────────────── */}
         <div className="sidebar__profile">
           <div className="sidebar__avatar" aria-hidden="true">
-            {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+            {user?.fullName?.charAt(0).toUpperCase() ?? 'U'}
           </div>
           {!collapsed && (
             <div className="sidebar__user-info">
-              <span className="sidebar__user-name">{user?.name ?? 'User'}</span>
+              <span className="sidebar__user-name">{user?.fullName ?? 'User'}</span>
               <span className="sidebar__role-badge">{user?.role ?? 'STUDENT'}</span>
             </div>
           )}
