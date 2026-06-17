@@ -41,3 +41,6 @@ export interface PaginatedResponse<T = unknown> {
 export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
+
+export * from './dto';
+

@@ -28,15 +28,15 @@ export const getDashboardStats = async (
         prisma.room.count(),
         prisma.room.count({ where: { status: 'FULL' } }),
         prisma.user.count({ where: { role: 'STUDENT' } }),
-        prisma.invoice.count({ where: { status: 'PENDING' } }),
-        prisma.invoice.count({ where: { status: 'OVERDUE' } }),
+        prisma.invoice.count({ where: { paymentStatus: 'UNPAID' } }),
+        prisma.invoice.count({ where: { paymentStatus: 'OVERDUE' } }),
         prisma.contract.count({ where: { status: 'ACTIVE' } }),
         // Doanh thu tháng hiện tại (hóa đơn đã thanh toán)
         prisma.invoice.aggregate({
-          _sum: { amount: true },
+          _sum: { totalAmount: true },
           where: {
-            status: 'PAID',
-            paidAt: {
+            paymentStatus: 'PAID',
+            paidDate: {
               gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
             },
           },
@@ -52,7 +52,7 @@ export const getDashboardStats = async (
         activeContracts,
         pendingInvoices,
         overdueInvoices,
-        monthlyRevenue: revenueResult._sum.amount ?? 0,
+        monthlyRevenue: revenueResult._sum.totalAmount ?? 0,
       }, 'Lấy thống kê tổng quan thành công');
     } else {
       // ── Student stats ──────────────────────────────────────
@@ -65,13 +65,13 @@ export const getDashboardStats = async (
         }),
         prisma.invoice.count({
           where: {
-            status: 'PENDING',
+            paymentStatus: 'UNPAID',
             contract: { userId },
           },
         }),
         prisma.invoice.count({
           where: {
-            status: 'OVERDUE',
+            paymentStatus: 'OVERDUE',
             contract: { userId },
           },
         }),

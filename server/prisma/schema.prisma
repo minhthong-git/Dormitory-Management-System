@@ -25,7 +25,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contracts Contract[]
+  contracts     Contract[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -46,8 +47,14 @@ model Room {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+<<<<<<< HEAD
   building   Building @relation(fields: [buildingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   contracts  Contract[]
+=======
+  contracts       Contract[]
+  utilityReadings UtilityReading[]
+  invoices        Invoice[]
+>>>>>>> 28d988e67ef7a2b80763a7191a5da0f99c04d156
 
   @@map("rooms")
 }
@@ -71,18 +78,29 @@ model Contract {
 }
 
 model Invoice {
-  id         String    @id @default(uuid())
-  contractId String
-  amount     Float
-  dueDate    DateTime
-  paidAt     DateTime?
-  /// Allowed values: PENDING | PAID | OVERDUE
-  status     String    @default("PENDING")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  roomId        String
+  contractId    String?
+  billingMonth  Int
+  billingYear   Int
+  roomFee       Float
+  electricityFee Float
+  waterFee      Float
+  serviceFee    Float
+  totalAmount   Float
+  /// Allowed values: UNPAID | PARTIAL | PAID | OVERDUE
+  paymentStatus String    @default("UNPAID")
+  dueDate       DateTime
+  paidDate      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  room          Room          @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contract      Contract?     @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@unique([roomId, billingMonth, billingYear])
+  @@index([roomId])
+  @@index([contractId])
   @@map("invoices")
 }
 
@@ -98,3 +116,51 @@ model Building {
 
   @@map("buildings")
 }
+model UtilityReading {
+  id               String   @id @default(uuid())
+  roomId           String
+  billingMonth     Int
+  billingYear      Int
+  previousElectric Float
+  currentElectric  Float
+  electricUsed     Float
+  previousWater    Float
+  currentWater     Float
+  waterUsed        Float
+  electricPrice    Float
+  waterPrice       Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  room             Room     @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([roomId, billingMonth, billingYear])
+  @@index([roomId])
+  @@map("utility_readings")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  /// Allowed values: INVOICE_CREATED | INVOICE_PAID | INVOICE_OVERDUE | CONTRACT_CREATED | CONTRACT_TERMINATED | CONTRACT_EXPIRING | UTILITY_RECORDED | PAYMENT_REMINDER | SYSTEM
+  type        String
+  /// Allowed values: LOW | MEDIUM | HIGH | URGENT
+  priority    String   @default("MEDIUM")
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  /// Optional link to related entity (e.g., invoice ID, contract ID)
+  referenceId String?
+  /// Allowed values: INVOICE | CONTRACT | UTILITY | ROOM | SYSTEM
+  referenceType String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+

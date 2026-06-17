@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from '@/context/SocketContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import BuildingList from './pages/BuildingList';
@@ -17,6 +18,11 @@ const ProfilePage        = lazy(() => import('@/pages/ProfilePage'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'));
 const AdminUsersPage     = lazy(() => import('@/pages/admin/AdminUsersPage'));
 const AdminRoomsPage     = lazy(() => import('@/pages/admin/AdminRoomsPage'));
+const AdminInvoicesPage  = lazy(() => import('@/pages/admin/AdminInvoicesPage'));
+const StudentInvoicesPage = lazy(() => import('@/pages/StudentInvoicesPage'));
+const InvoiceDetailPage   = lazy(() => import('@/pages/InvoiceDetailPage'));
+const RevenueStatisticsPage = lazy(() => import('@/pages/admin/RevenueStatisticsPage'));
+const NotificationsPage   = lazy(() => import('@/pages/NotificationsPage'));
 const UnauthorizedPage   = lazy(() => import('@/pages/UnauthorizedPage'));
 const NotFoundPage       = lazy(() => import('@/pages/NotFoundPage'));
 
@@ -31,6 +37,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <SocketProvider>
+          <NotificationProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* ── Public Routes ─────────────────────────────── */}
@@ -45,6 +52,9 @@ function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/rooms"     element={<RoomsPage />} />
                   <Route path="/profile"   element={<ProfilePage />} />
+                  <Route path="/invoices"     element={<StudentInvoicesPage />} />
+                  <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+                  <Route path="/notifications" element={<NotificationsPage />} />
                 </Route>
               </Route>
 
@@ -54,6 +64,8 @@ function App() {
                   <Route path="/admin"        element={<AdminDashboardPage />} />
                   <Route path="/admin/users"  element={<AdminUsersPage />} />
                   <Route path="/admin/rooms"  element={<AdminRoomsPage />} />
+                  <Route path="/admin/reports" element={<RevenueStatisticsPage />} />
+                  <Route path="/admin/notifications" element={<NotificationsPage />} />
                 </Route>
               </Route>
 
@@ -65,11 +77,17 @@ function App() {
     <Route path="/buildings/:buildingId/rooms" element={<RoomList />} />
   </Route>
 </Route>
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']} />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
+                </Route>
+              </Route>
 
               {/* ── 404 ───────────────────────────────────────── */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
+          </NotificationProvider>
         </SocketProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import './Sidebar.css';
 
 /* ── SVG Icon helpers ──────────────────────────────────────────── */
@@ -67,9 +68,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
 }) => {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
-  const navItems = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+  
+  const navItems = React.useMemo(() => {
+    const items = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+    return items.map((item) => {
+      if (item.label === 'Thông báo') {
+        return { ...item, badge: unreadCount };
+      }
+      return item;
+    });
+  }, [isAdmin, unreadCount]);
 
   const handleLogout = async () => {
     await logout();
