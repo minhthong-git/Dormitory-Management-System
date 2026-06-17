@@ -16,6 +16,25 @@ export interface User {
   updatedAt: string;
 }
 
+export interface Student {
+  id: string;
+  userId?: string;
+  studentCode: string;
+  fullName: string;
+  gender: string;
+  dateOfBirth?: string;
+  phone?: string;
+  email: string;
+  faculty?: string;
+  major?: string;
+  course?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Room {
   id: string;
   roomNumber: string;
@@ -30,16 +49,30 @@ export interface Room {
   updatedAt: string;
 }
 
+export interface Bed {
+  id: string;
+  roomId: string;
+  bedNumber: number;
+  bedType: string;
+  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+  room?: Room;
+  contracts?: Contract[];
+}
+
 export interface Contract {
   id: string;
-  userId: string;
-  roomId: string;
+  studentId: string;
+  bedId: string;
   startDate: string;
   endDate: string;
-  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED';
+  price: number;
+  deposit: number;
+  monthlyFee: number;
+  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING';
   createdAt: string;
-  user?: Pick<User, 'id' | 'fullName' | 'email' | 'studentId'>;
-  room?: Pick<Room, 'id' | 'roomNumber' | 'type' | 'floor' | 'pricePerMonth'>;
+  updatedAt: string;
+  student?: Student;
+  bed?: Bed;
   invoices?: Invoice[];
 }
 

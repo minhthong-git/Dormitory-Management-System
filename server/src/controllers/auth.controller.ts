@@ -182,7 +182,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     // ── 8. Trả về response (ẩn password, failedLoginCount, lockedUntil) ──
     const safeUser = {
       id: user.id,
-      full_name: user.fullName,
+      fullName: user.fullName,
       email: user.email,
       role: user.role,
       status: user.status,

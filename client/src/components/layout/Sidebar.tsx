@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import './Sidebar.css';
@@ -32,7 +32,9 @@ interface NavItem {
 const ADMIN_NAV: NavItem[] = [
   { label: 'Tổng quan',              to: '/dashboard',           icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
   { label: 'Quản lý Phòng',          to: '/admin/rooms',         icon: 'M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18' },
-  { label: 'Quản lý Sinh viên',      to: '/admin/users',         icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+  { label: 'Quản lý Giường',         to: '/admin/beds',          icon: 'M2 20h20M5 20V14h14v6M5 14V4h14v10M5 9h14' },
+  { label: 'Quản lý Hợp đồng',       to: '/admin/contracts',     icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6' },
+  { label: 'Quản lý Sinh viên',      to: '/admin/students',      icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
   { label: 'Hóa đơn',                to: '/admin/invoices',      icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8' },
   { label: 'Thanh toán',             to: '/admin/payments',      icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.86 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z' },
   { label: 'Thông báo',              to: '/admin/notifications', icon: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0', badge: 3 },
@@ -156,11 +158,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* ── User Profile ─────────────────────────────────────── */}
         <div className="sidebar__profile">
           <div className="sidebar__avatar" aria-hidden="true">
-            {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+            {user?.fullName?.charAt(0).toUpperCase() ?? 'U'}
           </div>
           {!collapsed && (
             <div className="sidebar__user-info">
-              <span className="sidebar__user-name">{user?.name ?? 'User'}</span>
+              <span className="sidebar__user-name">{user?.fullName ?? 'User'}</span>
               <span className="sidebar__role-badge">{user?.role ?? 'STUDENT'}</span>
             </div>
           )}

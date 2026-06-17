@@ -9,7 +9,7 @@ export const getStudents = async (req: Request, res: Response, next: NextFunctio
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, parseInt(req.query.limit as string) || 10);
     const skip = (page - 1) * limit;
-    const searchName = (req.query.name as string | undefined)?.trim();
+    const searchName = ((req.query.fullName || req.query.name) as string | undefined)?.trim();
     const searchCode = (req.query.studentCode as string | undefined)?.trim();
     const status = (req.query.status as string | undefined)?.trim();
 
@@ -49,7 +49,7 @@ export const getStudentById = async (req: Request, res: Response, next: NextFunc
 // ── POST /api/students ─────────────────────────────────────────
 export const createStudent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { studentCode, fullName, gender, email, phone, faculty, major, status, userId } = req.body;
+    const { studentCode, fullName, gender, dateOfBirth, email, phone, faculty, major, course, emergencyContact, emergencyPhone, status, userId } = req.body;
 
     const existing = await prisma.student.findFirst({
       where: { OR: [{ studentCode }, { email }, ...(userId ? [{ userId }] : [])] },
@@ -57,7 +57,21 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
     if (existing) throw new AppError('Sinh viên đã tồn tại (studentCode/email/userId trùng)', 409);
 
     const student = await prisma.student.create({
-      data: { studentCode, fullName, gender, email, phone, faculty, major, status, userId },
+      data: {
+        studentCode,
+        fullName,
+        gender,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        email,
+        phone,
+        faculty,
+        major,
+        course,
+        emergencyContact,
+        emergencyPhone,
+        status: status ?? 'ACTIVE',
+        userId: userId || null,
+      },
     });
     sendSuccess(res, student, 'Tạo sinh viên thành công', 201);
   } catch (err) {
@@ -69,7 +83,7 @@ export const createStudent = async (req: Request, res: Response, next: NextFunct
 export const updateStudent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const { studentCode, fullName, gender, email, phone, faculty, major, status, userId } = req.body;
+    const { studentCode, fullName, gender, dateOfBirth, email, phone, faculty, major, course, emergencyContact, emergencyPhone, status, userId } = req.body;
 
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) throw new AppError('Sinh viên không tồn tại', 404);
@@ -89,7 +103,21 @@ export const updateStudent = async (req: Request, res: Response, next: NextFunct
 
     const updated = await prisma.student.update({
       where: { id },
-      data: { studentCode, fullName, gender, email, phone, faculty, major, status, userId },
+      data: {
+        studentCode,
+        fullName,
+        gender,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : (dateOfBirth === null ? null : undefined),
+        email,
+        phone,
+        faculty,
+        major,
+        course,
+        emergencyContact,
+        emergencyPhone,
+        status,
+        userId: userId || (userId === null ? null : undefined),
+      },
     });
     sendSuccess(res, updated, 'Cập nhật sinh viên thành công');
   } catch (err) {

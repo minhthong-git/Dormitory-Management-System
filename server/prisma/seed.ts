@@ -45,7 +45,7 @@ async function main() {
   });
   console.log(`✅ Created Staff: ${staff.email}`);
 
-  // 2. Create 10 Rooms
+  // 2. Create 10 Rooms (AVAILABLE)
   console.log('🚪 Creating rooms...');
   const rooms = [];
   for (let i = 1; i <= 10; i++) {
@@ -67,7 +67,7 @@ async function main() {
   }
   console.log(`✅ Created ${rooms.length} rooms.`);
 
-  // 3. Create 40 Beds (4 per Room)
+  // 3. Create 40 Beds (AVAILABLE, 4 per Room)
   console.log('🛏️ Creating beds...');
   const beds = [];
   for (const room of rooms) {
@@ -133,69 +133,6 @@ async function main() {
     students.push(student);
   }
   console.log(`✅ Created ${students.length} student users and profiles.`);
-
-  // 5. Create 15 Contracts
-  console.log('📋 Creating contracts...');
-  // 10 ACTIVE, 3 EXPIRED, 2 PENDING
-  const contractStatusList = [
-    ...Array(10).fill('ACTIVE'),
-    ...Array(3).fill('EXPIRED'),
-    ...Array(2).fill('PENDING'),
-  ];
-
-  for (let i = 0; i < 15; i++) {
-    const student = students[i];
-    const bed = beds[i];
-    const status = contractStatusList[i];
-
-    const startDate = new Date();
-    if (status === 'EXPIRED') {
-      startDate.setMonth(startDate.getMonth() - 7);
-    } else if (status === 'PENDING') {
-      startDate.setDate(startDate.getDate() + 5);
-    } else {
-      startDate.setMonth(startDate.getMonth() - 1);
-    }
-
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 6);
-
-    await prisma.contract.create({
-      data: {
-        studentId: student.id,
-        bedId: bed.id,
-        startDate,
-        endDate,
-        price: 1200000,
-        deposit: 1200000,
-        monthlyFee: 1200000,
-        status,
-      },
-    });
-
-    // If ACTIVE, update bed to OCCUPIED and increment room occupancy
-    if (status === 'ACTIVE') {
-      await prisma.bed.update({
-        where: { id: bed.id },
-        data: { status: 'OCCUPIED' },
-      });
-
-      const updatedRoom = await prisma.room.update({
-        where: { id: bed.roomId },
-        data: {
-          currentOccupancy: { increment: 1 },
-        },
-      });
-
-      // Update room status if full
-      if (updatedRoom.currentOccupancy >= updatedRoom.capacity) {
-        await prisma.room.update({
-          where: { id: bed.roomId },
-          data: { status: 'FULL' },
-        });
-      }
-    }
-  }
 
   console.log('🌱 Seeding hoàn tất!');
 }

@@ -17,12 +17,14 @@ const listValidation = [
 const createValidation = [
   body('roomId').isUUID().withMessage('roomId không hợp lệ'),
   body('bedNumber').isInt({ min: 1 }).withMessage('bedNumber phải là số nguyên >= 1'),
+  body('bedType').optional({ checkFalsy: true }).isString().withMessage('bedType không hợp lệ'),
   body('status').optional({ checkFalsy: true }).isIn(['AVAILABLE', 'OCCUPIED', 'MAINTENANCE']).withMessage('status không hợp lệ'),
 ];
 
 const updateValidation = [
   body('roomId').optional({ checkFalsy: true }).isUUID().withMessage('roomId không hợp lệ'),
   body('bedNumber').optional({ checkFalsy: true }).isInt({ min: 1 }).withMessage('bedNumber phải là số nguyên >= 1'),
+  body('bedType').optional({ checkFalsy: true }).isString().withMessage('bedType không hợp lệ'),
   body('status').optional({ checkFalsy: true }).isIn(['AVAILABLE', 'OCCUPIED', 'MAINTENANCE']).withMessage('status không hợp lệ'),
 ];
 

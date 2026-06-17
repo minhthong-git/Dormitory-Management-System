@@ -16,8 +16,27 @@ export const getContracts = async (req: Request, res: Response, next: NextFuncti
 
     // Student chỉ xem hợp đồng của mình (map từ User -> Student)
     if (req.user?.role === 'STUDENT') {
-      const student = await prisma.student.findUnique({ where: { userId: req.user.sub }, select: { id: true } });
-      if (!student) throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+      let student = await prisma.student.findUnique({ where: { userId: req.user.sub }, select: { id: true } });
+      if (!student) {
+        // Auto-provision if missing
+        const user = await prisma.user.findUnique({ where: { id: req.user.sub } });
+        if (user) {
+          student = await prisma.student.create({
+            data: {
+              userId: user.id,
+              studentCode: user.studentId || `SV_${user.id.substring(0, 8)}`,
+              fullName: user.fullName,
+              email: user.email,
+              phone: user.phone,
+              gender: 'OTHER',
+              status: 'ACTIVE',
+            },
+            select: { id: true },
+          });
+        } else {
+          throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+        }
+      }
       where.studentId = student.id;
     }
 
@@ -78,7 +97,7 @@ export const getContractById = async (req: Request, res: Response, next: NextFun
 // ── POST /api/contracts ───────────────────────────────────────
 export const createContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { studentId, bedId, startDate, endDate, price } = req.body;
+    const { studentId, bedId, startDate, endDate, price, deposit, monthlyFee } = req.body;
 
     const student = await prisma.student.findUnique({ where: { id: studentId } });
     if (!student) throw new AppError('Sinh viên không tồn tại', 404);
@@ -91,6 +110,10 @@ export const createContract = async (req: Request, res: Response, next: NextFunc
     const activeContract = await prisma.contract.findFirst({ where: { studentId, status: 'ACTIVE' } });
     if (activeContract) throw new AppError('Sinh viên đã có hợp đồng đang hoạt động', 409);
 
+    const finalPrice = price ?? bed.room.pricePerMonth;
+    const finalDeposit = deposit ?? finalPrice;
+    const finalMonthlyFee = monthlyFee ?? finalPrice;
+
     const [contract] = await prisma.$transaction([
       prisma.contract.create({
         data: {
@@ -98,7 +121,9 @@ export const createContract = async (req: Request, res: Response, next: NextFunc
           bedId,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
-          price,
+          price: finalPrice,
+          deposit: finalDeposit,
+          monthlyFee: finalMonthlyFee,
           status: 'ACTIVE',
         },
         include: {
@@ -164,10 +189,12 @@ export const checkIn = async (req: Request, res: Response, next: NextFunction): 
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 1);
     const price = bed.room.pricePerMonth;
+    const deposit = bed.room.pricePerMonth;
+    const monthlyFee = bed.room.pricePerMonth;
 
     const [contract] = await prisma.$transaction([
       prisma.contract.create({
-        data: { studentId, bedId, startDate, endDate, price, status: 'ACTIVE' },
+        data: { studentId, bedId, startDate, endDate, price, deposit, monthlyFee, status: 'ACTIVE' },
         include: {
           student: { select: { id: true, studentCode: true, fullName: true } },
           bed: { select: { id: true, bedNumber: true, room: { select: { id: true, roomNumber: true } } } },
@@ -229,8 +256,10 @@ export const transferBed = async (req: Request, res: Response, next: NextFunctio
     if (newBed.status !== 'AVAILABLE') throw new AppError('Giường mới không có sẵn', 400);
 
     const oldBedId = contract.bedId;
+    const oldRoomId = contract.bed.roomId;
+    const newRoomId = newBed.roomId;
 
-    const [updatedContract] = await prisma.$transaction([
+    const transactionTasks: any[] = [
       prisma.contract.update({ where: { id: contract.id }, data: { bedId: newBedId } }),
       prisma.bed.update({ where: { id: oldBedId }, data: { status: 'AVAILABLE' } }),
       prisma.bed.update({ where: { id: newBedId }, data: { status: 'OCCUPIED' } }),
@@ -243,9 +272,99 @@ export const transferBed = async (req: Request, res: Response, next: NextFunctio
           reason,
         },
       }),
-    ]);
+    ];
+
+    // If rooms are different, update currentOccupancy and status for both rooms
+    if (oldRoomId !== newRoomId) {
+      transactionTasks.push(
+        prisma.room.update({
+          where: { id: oldRoomId },
+          data: {
+            currentOccupancy: { decrement: 1 },
+            status: 'AVAILABLE',
+          },
+        }),
+        prisma.room.update({
+          where: { id: newRoomId },
+          data: {
+            currentOccupancy: { increment: 1 },
+            status: newBed.room.currentOccupancy + 1 >= newBed.room.capacity ? 'FULL' : 'AVAILABLE',
+          },
+        })
+      );
+    }
+
+    const [updatedContract] = await prisma.$transaction(transactionTasks);
 
     sendSuccess(res, updatedContract, 'Chuyển giường thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PUT /api/contracts/:id ─────────────────────────────────────
+export const updateContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { price, deposit, monthlyFee } = req.body;
+
+    const contract = await prisma.contract.findUnique({ where: { id } });
+    if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
+
+    const updated = await prisma.contract.update({
+      where: { id },
+      data: { price, deposit, monthlyFee },
+    });
+
+    sendSuccess(res, updated, 'Cập nhật hợp đồng thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /api/contracts/:id/extend ────────────────────────────
+export const extendContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { endDate } = req.body;
+
+    const contract = await prisma.contract.findUnique({ where: { id } });
+    if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
+    if (contract.status !== 'ACTIVE') throw new AppError('Chỉ có thể gia hạn hợp đồng đang hoạt động', 400);
+
+    const updated = await prisma.contract.update({
+      where: { id },
+      data: { endDate: new Date(endDate) },
+    });
+
+    sendSuccess(res, updated, 'Gia hạn hợp đồng thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── DELETE /api/contracts/:id ──────────────────────────────────
+export const deleteContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const contract = await prisma.contract.findUnique({ where: { id }, include: { bed: { include: { room: true } } } });
+    if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
+
+    if (contract.status === 'ACTIVE') {
+      // Revert bed and room if deleting an active contract
+      await prisma.$transaction([
+        prisma.contract.delete({ where: { id } }),
+        prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'AVAILABLE' } }),
+        prisma.room.update({
+          where: { id: contract.bed.roomId },
+          data: { currentOccupancy: { decrement: 1 }, status: 'AVAILABLE' },
+        }),
+      ]);
+    } else {
+      await prisma.contract.delete({ where: { id } });
+    }
+
+    sendSuccess(res, null, 'Xóa hợp đồng thành công');
   } catch (err) {
     next(err);
   }

@@ -1,0 +1,151 @@
+/* ── Room Occupancy View specific CSS ────────────────────────── */
+
+.occupancy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+.room-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.room-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.room-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 10px;
+}
+
+.room-card__number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.room-card__meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.room-card__occupancy {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.room-card__beds-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
+}
+
+.bed-status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition);
+}
+
+/* ── Bed Status Colors (Premium HSL Palette) ─────────────────── */
+.bed-status-item--available {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #a7f3d0;
+}
+.bed-status-indicator--available {
+  background: var(--color-success);
+}
+
+.bed-status-item--occupied {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+}
+.bed-status-indicator--occupied {
+  background: var(--color-danger);
+}
+
+.bed-status-item--maintenance {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #fef3c7;
+}
+.bed-status-indicator--maintenance {
+  background: var(--color-warning);
+}
+
+.bed-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.bed-student-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.bed-student-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.bed-student-code {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.occupancy-summary {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.summary-pill {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+.summary-pill strong {
+  color: var(--color-primary);
+}
+.summary-pill--green strong {
+  color: var(--color-success);
+}
+.summary-pill--red strong {
+  color: var(--color-danger);
+}
+.summary-pill--yellow strong {
+  color: var(--color-warning);
+}

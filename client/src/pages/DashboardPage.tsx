@@ -109,7 +109,7 @@ const AdminStats: React.FC<{ data: AdminDashboardStats; firstName: string }> = (
           <div className="dash-quick-actions">
             {[
               { label: 'Thêm Phòng',         icon: '➕', href: '/admin/rooms'       },
-              { label: 'Thêm Sinh viên',     icon: '👤', href: '/admin/users'       },
+              { label: 'Thêm Sinh viên',     icon: '👤', href: '/admin/students/new' },
               { label: 'Tạo Hóa đơn',       icon: '🧾', href: '/admin/invoices'    },
               { label: 'Xem Báo cáo',       icon: '📊', href: '/admin/reports'     },
               { label: 'Quản lý Sửa chữa', icon: '🔧', href: '/admin/maintenance' },

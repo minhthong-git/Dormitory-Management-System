@@ -7,7 +7,7 @@ import { AppError } from '@/middleware/errorHandler';
 export const getBeds = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(50, parseInt(req.query.limit as string) || 10);
+    const limit = Math.min(100, parseInt(req.query.limit as string) || 10); // allow larger limit for occupancy view
     const skip = (page - 1) * limit;
     const roomId = (req.query.roomId as string | undefined)?.trim();
     const status = (req.query.status as string | undefined)?.trim();
@@ -22,7 +22,13 @@ export const getBeds = async (req: Request, res: Response, next: NextFunction): 
         skip,
         take: limit,
         orderBy: [{ roomId: 'asc' }, { bedNumber: 'asc' }],
-        include: { room: { select: { id: true, roomNumber: true, floor: true, type: true } } },
+        include: {
+          room: { select: { id: true, roomNumber: true, floor: true, type: true, capacity: true } },
+          contracts: {
+            where: { status: 'ACTIVE' },
+            include: { student: { select: { id: true, studentCode: true, fullName: true } } },
+          },
+        },
       }),
       prisma.bed.count({ where }),
     ]);
@@ -39,7 +45,13 @@ export const getBedById = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
     const bed = await prisma.bed.findUnique({
       where: { id },
-      include: { room: { select: { id: true, roomNumber: true, floor: true, type: true } } },
+      include: {
+        room: { select: { id: true, roomNumber: true, floor: true, type: true, capacity: true } },
+        contracts: {
+          where: { status: 'ACTIVE' },
+          include: { student: { select: { id: true, studentCode: true, fullName: true } } },
+        },
+      },
     });
     if (!bed) throw new AppError('Giường không tồn tại', 404);
     sendSuccess(res, bed, 'Lấy thông tin giường thành công');
@@ -51,7 +63,7 @@ export const getBedById = async (req: Request, res: Response, next: NextFunction
 // ── POST /api/beds ─────────────────────────────────────────────
 export const createBed = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { roomId, bedNumber, status } = req.body as { roomId: string; bedNumber: number; status?: string };
+    const { roomId, bedNumber, bedType, status } = req.body as { roomId: string; bedNumber: number; bedType?: string; status?: string };
 
     const room = await prisma.room.findUnique({ where: { id: roomId } });
     if (!room) throw new AppError('Phòng không tồn tại', 404);
@@ -60,7 +72,7 @@ export const createBed = async (req: Request, res: Response, next: NextFunction)
     if (existing) throw new AppError('Giường đã tồn tại trong phòng (bedNumber trùng)', 409);
 
     const bed = await prisma.bed.create({
-      data: { roomId, bedNumber, status: status ?? 'AVAILABLE' },
+      data: { roomId, bedNumber, bedType: bedType ?? 'SINGLE', status: status ?? 'AVAILABLE' },
       include: { room: { select: { id: true, roomNumber: true } } },
     });
     sendSuccess(res, bed, 'Tạo giường thành công', 201);
@@ -73,7 +85,7 @@ export const createBed = async (req: Request, res: Response, next: NextFunction)
 export const updateBed = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const { roomId, bedNumber, status } = req.body as { roomId?: string; bedNumber?: number; status?: string };
+    const { roomId, bedNumber, bedType, status } = req.body as { roomId?: string; bedNumber?: number; bedType?: string; status?: string };
 
     const bed = await prisma.bed.findUnique({ where: { id } });
     if (!bed) throw new AppError('Giường không tồn tại', 404);
@@ -93,7 +105,7 @@ export const updateBed = async (req: Request, res: Response, next: NextFunction)
 
     const updated = await prisma.bed.update({
       where: { id },
-      data: { roomId, bedNumber, status },
+      data: { roomId, bedNumber, bedType, status },
       include: { room: { select: { id: true, roomNumber: true } } },
     });
     sendSuccess(res, updated, 'Cập nhật giường thành công');

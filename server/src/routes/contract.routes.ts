@@ -10,6 +10,9 @@ import {
   checkIn,
   checkOut,
   transferBed,
+  updateContract,
+  extendContract,
+  deleteContract,
 } from '@/controllers/contract.controller';
 
 const router = Router();
@@ -56,5 +59,14 @@ router.post('/transfer', verifyJWT, requireRoles('ADMIN', 'STAFF'), transferVali
 
 // PATCH  /api/contracts/:id/terminate — ADMIN/STAFF only
 router.patch('/:id/terminate', verifyJWT, requireRoles('ADMIN', 'STAFF'), terminateContract);
+
+// PUT    /api/contracts/:id — ADMIN/STAFF only
+router.put('/:id', verifyJWT, requireRoles('ADMIN', 'STAFF'), updateContract);
+
+// PATCH  /api/contracts/:id/extend — ADMIN/STAFF only
+router.patch('/:id/extend', verifyJWT, requireRoles('ADMIN', 'STAFF'), extendContract);
+
+// DELETE /api/contracts/:id — ADMIN/STAFF only
+router.delete('/:id', verifyJWT, requireRoles('ADMIN', 'STAFF'), deleteContract);
 
 export default router;

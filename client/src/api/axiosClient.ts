@@ -53,7 +53,10 @@ axiosClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Do not attempt to refresh token if the request is already for login or refresh
+    const isAuthRequest = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -68,6 +71,8 @@ axiosClient.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) throw new Error('No refresh token');
+
         const { data } = await axios.post<{ accessToken: string }>(
           `${import.meta.env.VITE_API_BASE_URL ?? '/api'}/auth/refresh`,
           { refreshToken }

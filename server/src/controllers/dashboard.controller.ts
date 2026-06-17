@@ -28,7 +28,7 @@ export const getDashboardStats = async (
       ] = await Promise.all([
         prisma.room.count(),
         prisma.room.count({ where: { status: 'FULL' } }),
-        prisma.student.count(),
+        prisma.user.count({ where: { role: 'STUDENT' } }),
         prisma.invoice.count({ where: { status: 'PENDING' } }),
         prisma.invoice.count({ where: { status: 'OVERDUE' } }),
         prisma.contract.count({ where: { status: 'ACTIVE' } }),
@@ -57,13 +57,28 @@ export const getDashboardStats = async (
       }, 'Lấy thống kê tổng quan thành công');
     } else {
       // ── Student stats ──────────────────────────────────────
-      const student = await prisma.student.findUnique({ where: { userId }, select: { id: true } });
-      if (!student) throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+      const student = await prisma.student.findUnique({ where: { userId } });
+      if (!student) {
+        throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+      }
 
       const [activeContract, pendingInvoices, overdueInvoices] = await Promise.all([
         prisma.contract.findFirst({
           where: { studentId: student.id, status: 'ACTIVE' },
-          include: { bed: { include: { room: { select: { roomNumber: true, type: true, floor: true, pricePerMonth: true } } } } },
+          include: {
+            bed: {
+              include: {
+                room: {
+                  select: {
+                    roomNumber: true,
+                    type: true,
+                    floor: true,
+                    pricePerMonth: true,
+                  },
+                },
+              },
+            },
+          },
         }),
         prisma.invoice.count({ where: { status: 'PENDING', contract: { studentId: student.id } } }),
         prisma.invoice.count({ where: { status: 'OVERDUE', contract: { studentId: student.id } } }),

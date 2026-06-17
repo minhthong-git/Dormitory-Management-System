@@ -16,8 +16,27 @@ export const getInvoices = async (req: Request, res: Response, next: NextFunctio
 
     // Student chỉ xem invoice của hợp đồng mình
     if (req.user?.role === 'STUDENT') {
-      const student = await prisma.student.findUnique({ where: { userId: req.user.sub }, select: { id: true } });
-      if (!student) throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+      let student = await prisma.student.findUnique({ where: { userId: req.user.sub }, select: { id: true } });
+      if (!student) {
+        // Auto-provision if missing
+        const user = await prisma.user.findUnique({ where: { id: req.user.sub } });
+        if (user) {
+          student = await prisma.student.create({
+            data: {
+              userId: user.id,
+              studentCode: user.studentId || `SV_${user.id.substring(0, 8)}`,
+              fullName: user.fullName,
+              email: user.email,
+              phone: user.phone,
+              gender: 'OTHER',
+              status: 'ACTIVE',
+            },
+            select: { id: true },
+          });
+        } else {
+          throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+        }
+      }
       const studentContracts = await prisma.contract.findMany({ where: { studentId: student.id }, select: { id: true } });
       where.contractId = { in: studentContracts.map((c) => c.id) };
     }
