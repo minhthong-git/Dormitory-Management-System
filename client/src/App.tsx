@@ -12,6 +12,7 @@ import { lazy, Suspense } from 'react';
 
 const LoginPage          = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage       = lazy(() => import('@/pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
 const DashboardPage      = lazy(() => import('@/pages/DashboardPage'));
 const RoomsPage          = lazy(() => import('@/pages/RoomsPage'));
 const ProfilePage        = lazy(() => import('@/pages/ProfilePage'));
@@ -43,6 +44,7 @@ function App() {
               {/* ── Public Routes ─────────────────────────────── */}
               <Route path="/login"        element={<LoginPage />} />
               <Route path="/register"     element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* ── Protected — wrapped in DashboardLayout ─────── */}

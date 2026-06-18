@@ -38,7 +38,7 @@ export interface Contract {
   endDate: string;
   status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED';
   createdAt: string;
-  user?: Pick<User, 'id' | 'fullName' | 'email' | 'studentId' | 'phone'>;
+  user?: Pick<User, 'id' | 'fullName' | 'email' | 'studentId'>;
   room?: Pick<Room, 'id' | 'roomNumber' | 'type' | 'floor' | 'pricePerMonth'>;
   invoices?: Invoice[];
 }
@@ -46,29 +46,12 @@ export interface Contract {
 export interface Invoice {
   id: string;
   contractId: string;
-  utilityReadingId?: string;
   amount: number;
   dueDate: string;
   paidAt?: string;
   status: 'PENDING' | 'PAID' | 'OVERDUE';
   createdAt: string;
   contract?: Contract;
-  utilityReading?: UtilityReading;
-}
-
-export interface UtilityReading {
-  id: string;
-  roomId: string;
-  billingMonth: string;
-  electricityStart: number;
-  electricityEnd: number;
-  waterStart: number;
-  waterEnd: number;
-  electricityRate: number;
-  waterRate: number;
-  createdAt: string;
-  updatedAt: string;
-  room?: Pick<Room, 'roomNumber' | 'pricePerMonth'>;
 }
 
 // ============================================================
@@ -121,3 +104,29 @@ export interface ApiError {
   message: string;
   errors?: Record<string, string>;
 }
+
+// ============================================================
+// Payload Types
+// ============================================================
+
+export interface UpdateProfilePayload {
+  fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordPayload {
+  oldPassword?: string;
+  newPassword?: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  otp: string;
+  newPassword?: string;
+}
+

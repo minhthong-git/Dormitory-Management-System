@@ -1,0 +1,1212 @@
+From ad226d4adee826aaca3dbad48938b0d4fc4a4832 Mon Sep 17 00:00:00 2001
+From: minhthong-git <thongnguyenminh284@gmail.com>
+Date: Tue, 16 Jun 2026 10:40:11 +0700
+Subject: [PATCH] forgot password, update profile
+
+---
+ client/src/App.tsx                        |   2 +
+ client/src/api/auth.api.ts                |  25 +-
+ client/src/context/AuthContext.tsx        |  24 +-
+ client/src/pages/ForgotPasswordPage.tsx   | 277 ++++++++++++++++++++++
+ client/src/pages/LoginPage.tsx            |   8 +-
+ client/src/pages/ProfilePage.css          | 103 ++++++++
+ client/src/pages/ProfilePage.tsx          | 247 ++++++++++++++++++-
+ client/src/types/index.ts                 |  26 ++
+ server/prisma/schema.prisma               |   3 +
+ server/src/controllers/auth.controller.ts | 160 ++++++++++++-
+ server/src/middleware/validator.ts        |  13 +
+ server/src/routes/auth.routes.ts          |  62 ++++-
+ server/src/utils/mailer.ts                |  30 +++
+ 13 files changed, 958 insertions(+), 22 deletions(-)
+ create mode 100644 client/src/pages/ForgotPasswordPage.tsx
+ create mode 100644 client/src/pages/ProfilePage.css
+ create mode 100644 server/src/middleware/validator.ts
+
+diff --git a/client/src/App.tsx b/client/src/App.tsx
+index df0e666..b6a5ca3 100644
+--- a/client/src/App.tsx
++++ b/client/src/App.tsx
+@@ -9,6 +9,7 @@ import { lazy, Suspense } from 'react';
+ 
+ const LoginPage          = lazy(() => import('@/pages/LoginPage'));
+ const RegisterPage       = lazy(() => import('@/pages/RegisterPage'));
++const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
+ const DashboardPage      = lazy(() => import('@/pages/DashboardPage'));
+ const RoomsPage          = lazy(() => import('@/pages/RoomsPage'));
+ const ProfilePage        = lazy(() => import('@/pages/ProfilePage'));
+@@ -34,6 +35,7 @@ function App() {
+               {/* ── Public Routes ─────────────────────────────── */}
+               <Route path="/login"        element={<LoginPage />} />
+               <Route path="/register"     element={<RegisterPage />} />
++              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+               <Route path="/unauthorized" element={<UnauthorizedPage />} />
+ 
+               {/* ── Protected — wrapped in DashboardLayout ─────── */}
+diff --git a/client/src/api/auth.api.ts b/client/src/api/auth.api.ts
+index 0276a62..e9b190d 100644
+--- a/client/src/api/auth.api.ts
++++ b/client/src/api/auth.api.ts
+@@ -1,5 +1,15 @@
+ import axiosClient from './axiosClient';
+-import type { AuthResponse, LoginPayload, RegisterPayload, ApiResponse, User } from '@/types';
++import type {
++  AuthResponse,
++  LoginPayload,
++  RegisterPayload,
++  ApiResponse,
++  User,
++  UpdateProfilePayload,
++  ChangePasswordPayload,
++  ForgotPasswordPayload,
++  ResetPasswordPayload
++} from '@/types';
+ 
+ export const authApi = {
+   login: (payload: LoginPayload) =>
+@@ -17,4 +27,17 @@ export const authApi = {
+     axiosClient.post<{ accessToken: string }>('/auth/refresh', { refreshToken }),
+ 
+   getMe: () => axiosClient.get<ApiResponse<User>>('/auth/me'),
++
++  updateProfile: (payload: UpdateProfilePayload) =>
++    axiosClient.put<ApiResponse<User>>('/auth/me', payload),
++
++  changePassword: (payload: ChangePasswordPayload) =>
++    axiosClient.patch<ApiResponse<null>>('/auth/me/password', payload),
++
++  forgotPassword: (payload: ForgotPasswordPayload) =>
++    axiosClient.post<ApiResponse<null>>('/auth/forgot-password', payload),
++
++  resetPassword: (payload: ResetPasswordPayload) =>
++    axiosClient.post<ApiResponse<null>>('/auth/reset-password', payload),
+ };
++
+diff --git a/client/src/context/AuthContext.tsx b/client/src/context/AuthContext.tsx
+index a9aae70..aa78c89 100644
+--- a/client/src/context/AuthContext.tsx
++++ b/client/src/context/AuthContext.tsx
+@@ -20,6 +20,7 @@ interface AuthContextValue {
+   register: (payload: RegisterPayload) => Promise<void>;
+   logout: () => Promise<void>;
+   hasRole: (role: Role | Role[]) => boolean;
++  fetchMe: () => Promise<void>;
+ }
+ 
+ const AuthContext = createContext<AuthContextValue | null>(null);
+@@ -31,6 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
+   const [user, setUser] = useState<User | null>(null);
+   const [isLoading, setIsLoading] = useState(true);
+ 
++  const fetchMe = useCallback(async () => {
++    try {
++      const { data } = await authApi.getMe();
++      setUser(data.data);
++    } catch (err) {
++      localStorage.removeItem('accessToken');
++      localStorage.removeItem('refreshToken');
++      setUser(null);
++      throw err;
++    }
++  }, []);
++
+   // Kiểm tra session khi app load
+   useEffect(() => {
+     const bootstrap = async () => {
+@@ -40,17 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
+         return;
+       }
+       try {
+-        const { data } = await authApi.getMe();
+-        setUser(data.data);
++        await fetchMe();
+       } catch {
+-        localStorage.removeItem('accessToken');
+-        localStorage.removeItem('refreshToken');
++        // silent
+       } finally {
+         setIsLoading(false);
+       }
+     };
+     bootstrap();
+-  }, []);
++  }, [fetchMe]);
+ 
+   const login = useCallback(async (payload: LoginPayload) => {
+     const { data } = await authApi.login(payload);
+@@ -94,8 +105,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
+       register,
+       logout,
+       hasRole,
++      fetchMe,
+     }),
+-    [user, isLoading, login, register, logout, hasRole]
++    [user, isLoading, login, register, logout, hasRole, fetchMe]
+   );
+ 
+   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+diff --git a/client/src/pages/ForgotPasswordPage.tsx b/client/src/pages/ForgotPasswordPage.tsx
+new file mode 100644
+index 0000000..37b683c
+--- /dev/null
++++ b/client/src/pages/ForgotPasswordPage.tsx
+@@ -0,0 +1,277 @@
++import React, { useState, useEffect } from 'react';
++import { useNavigate, Link } from 'react-router-dom';
++import { authApi } from '@/api/auth.api';
++
++const ForgotPasswordPage: React.FC = () => {
++  const navigate = useNavigate();
++
++  // Luồng 2 bước:
++  // 1: Nhập email gửi OTP
++  // 2: Nhập OTP và mật khẩu mới
++  const [step, setStep] = useState<1 | 2>(1);
++
++  // Form states
++  const [email, setEmail] = useState('');
++  const [otp, setOtp] = useState('');
++  const [newPassword, setNewPassword] = useState('');
++  const [confirmPassword, setConfirmPassword] = useState('');
++
++  // Status & Loading states
++  const [isLoading, setIsLoading] = useState(false);
++  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
++
++  // Rate limit cooldown state
++  const [cooldown, setCooldown] = useState(0);
++
++  // Cooldown timer logic
++  useEffect(() => {
++    if (cooldown > 0) {
++      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
++      return () => clearTimeout(timer);
++    }
++  }, [cooldown]);
++
++  const handleSendOtp = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setMessage(null);
++
++    if (!email) {
++      setMessage({ text: 'Vui lòng nhập email', type: 'error' });
++      return;
++    }
++
++    setIsLoading(true);
++    try {
++      await authApi.forgotPassword({ email });
++      setMessage({
++        text: 'Mã OTP đã được gửi. Vui lòng kiểm tra email của bạn.',
++        type: 'success',
++      });
++      setCooldown(60); // Đặt cooldown 60 giây
++      setStep(2);
++    } catch (err: any) {
++      const errMsg = err.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại.';
++      setMessage({ text: errMsg, type: 'error' });
++    } finally {
++      setIsLoading(false);
++    }
++  };
++
++  const handleResendOtp = async () => {
++    if (cooldown > 0) return;
++    setMessage(null);
++
++    setIsLoading(true);
++    try {
++      await authApi.forgotPassword({ email });
++      setMessage({
++        text: 'Mã OTP mới đã được gửi lại vào email của bạn.',
++        type: 'success',
++      });
++      setCooldown(60);
++    } catch (err: any) {
++      const errMsg = err.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại.';
++      setMessage({ text: errMsg, type: 'error' });
++    } finally {
++      setIsLoading(false);
++    }
++  };
++
++  const handleResetPassword = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setMessage(null);
++
++    if (!otp || !newPassword || !confirmPassword) {
++      setMessage({ text: 'Vui lòng nhập đầy đủ thông tin', type: 'error' });
++      return;
++    }
++
++    if (otp.length !== 6 || isNaN(Number(otp))) {
++      setMessage({ text: 'Mã OTP phải có đúng 6 chữ số', type: 'error' });
++      return;
++    }
++
++    if (newPassword.length < 8) {
++      setMessage({ text: 'Mật khẩu mới phải có ít nhất 8 ký tự', type: 'error' });
++      return;
++    }
++
++    if (!/[A-Z]/.test(newPassword)) {
++      setMessage({ text: 'Mật khẩu mới phải chứa ít nhất 1 chữ hoa', type: 'error' });
++      return;
++    }
++
++    if (!/[0-9]/.test(newPassword)) {
++      setMessage({ text: 'Mật khẩu mới phải chứa ít nhất 1 số', type: 'error' });
++      return;
++    }
++
++    if (newPassword !== confirmPassword) {
++      setMessage({ text: 'Xác nhận mật khẩu mới không khớp', type: 'error' });
++      return;
++    }
++
++    setIsLoading(true);
++    try {
++      await authApi.resetPassword({ email, otp, newPassword });
++      setMessage({
++        text: 'Đặt lại mật khẩu thành công! Bạn sẽ được chuyển hướng về trang đăng nhập sau 2 giây...',
++        type: 'success',
++      });
++      setTimeout(() => {
++        navigate('/login');
++      }, 2000);
++    } catch (err: any) {
++      const errMsg = err.response?.data?.message || 'Mã OTP không đúng hoặc đã hết hạn.';
++      setMessage({ text: errMsg, type: 'error' });
++    } finally {
++      setIsLoading(false);
++    }
++  };
++
++  return (
++    <div className="auth-page">
++      <div className="auth-card">
++        <header className="auth-header">
++          <h1 className="auth-title">Quên mật khẩu</h1>
++          <p className="auth-subtitle">
++            {step === 1
++              ? 'Nhập email của bạn để nhận mã OTP khôi phục mật khẩu'
++              : 'Nhập mã OTP và mật khẩu mới của bạn'}
++          </p>
++        </header>
++
++        {message && (
++          <div
++            className={`profile-status-message profile-status-message--${message.type}`}
++            style={{ marginBottom: '16px' }}
++          >
++            {message.text}
++          </div>
++        )}
++
++        {step === 1 ? (
++          <form onSubmit={handleSendOtp} className="auth-form">
++            <div className="form-group">
++              <label htmlFor="email">Email</label>
++              <input
++                id="email"
++                type="email"
++                placeholder="email@example.com"
++                value={email}
++                onChange={(e) => setEmail(e.target.value)}
++                required
++                disabled={isLoading}
++              />
++            </div>
++
++            <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
++              {isLoading ? 'Đang gửi...' : 'Gửi mã xác nhận'}
++            </button>
++          </form>
++        ) : (
++          <form onSubmit={handleResetPassword} className="auth-form">
++            {/* Hidden email input to assist browser password manager */}
++            <input
++              type="hidden"
++              name="username"
++              value={email}
++              autoComplete="username"
++              readOnly
++            />
++
++            <div className="form-group">
++              <label htmlFor="otp">Mã xác nhận (OTP)</label>
++              <input
++                id="otp"
++                type="text"
++                maxLength={6}
++                placeholder="Nhập mã 6 chữ số"
++                value={otp}
++                onChange={(e) => setOtp(e.target.value)}
++                required
++                disabled={isLoading}
++                autoComplete="one-time-code"
++              />
++            </div>
++
++            <div className="form-group">
++              <label htmlFor="newPassword">Mật khẩu mới</label>
++              <input
++                id="newPassword"
++                type="password"
++                placeholder="Ít nhất 8 ký tự, 1 chữ hoa, 1 chữ số"
++                value={newPassword}
++                onChange={(e) => setNewPassword(e.target.value)}
++                required
++                disabled={isLoading}
++                autoComplete="new-password"
++              />
++            </div>
++
++            <div className="form-group">
++              <label htmlFor="confirmPassword">Xác nhận mật khẩu mới</label>
++              <input
++                id="confirmPassword"
++                type="password"
++                placeholder="Nhập lại mật khẩu mới"
++                value={confirmPassword}
++                onChange={(e) => setConfirmPassword(e.target.value)}
++                required
++                disabled={isLoading}
++                autoComplete="new-password"
++              />
++            </div>
++
++            <button type="submit" className="btn btn-primary btn-full" disabled={isLoading}>
++              {isLoading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
++            </button>
++
++            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginTop: '10px' }}>
++              <button
++                type="button"
++                onClick={handleResendOtp}
++                style={{
++                  background: 'none',
++                  border: 'none',
++                  color: cooldown > 0 ? 'var(--color-text-muted)' : 'var(--color-primary)',
++                  cursor: cooldown > 0 ? 'not-allowed' : 'pointer',
++                  fontSize: '14px',
++                }}
++                disabled={cooldown > 0 || isLoading}
++              >
++                {cooldown > 0 ? `Gửi lại mã sau (${cooldown}s)` : 'Gửi lại mã OTP'}
++              </button>
++
++              <button
++                type="button"
++                onClick={() => {
++                  setStep(1);
++                  setMessage(null);
++                }}
++                style={{
++                  background: 'none',
++                  border: 'none',
++                  color: 'var(--color-primary)',
++                  cursor: 'pointer',
++                  fontSize: '14px',
++                }}
++                disabled={isLoading}
++              >
++                Thay đổi email
++              </button>
++            </div>
++          </form>
++        )}
++
++        <footer className="auth-footer">
++          <Link to="/login" className="auth-link">
++            Quay lại trang Đăng nhập
++          </Link>
++        </footer>
++      </div>
++    </div>
++  );
++};
++
++export default ForgotPasswordPage;
+diff --git a/client/src/pages/LoginPage.tsx b/client/src/pages/LoginPage.tsx
+index e31db23..b2f598b 100644
+--- a/client/src/pages/LoginPage.tsx
++++ b/client/src/pages/LoginPage.tsx
+@@ -55,7 +55,7 @@ const LoginPage: React.FC = () => {
+               onChange={handleChange}
+               placeholder="sv@university.edu.vn"
+               required
+-              autoComplete="email"
++              autoComplete="off"
+             />
+           </div>
+ 
+@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
+               onChange={handleChange}
+               placeholder="••••••••"
+               required
+-              autoComplete="current-password"
++              autoComplete="new-password"
+             />
+           </div>
+ 
+@@ -83,6 +83,10 @@ const LoginPage: React.FC = () => {
+           <Link to="/register" className="auth-link">
+             Đăng ký
+           </Link>
++          <span style={{ margin: '0 8px', color: 'var(--color-text-muted)' }}>|</span>
++          <Link to="/forgot-password" className="auth-link">
++            Quên mật khẩu?
++          </Link>
+         </p>
+       </div>
+     </div>
+diff --git a/client/src/pages/ProfilePage.css b/client/src/pages/ProfilePage.css
+new file mode 100644
+index 0000000..798b769
+--- /dev/null
++++ b/client/src/pages/ProfilePage.css
+@@ -0,0 +1,103 @@
++.profile-container {
++  display: flex;
++  flex-direction: column;
++  gap: var(--space-lg);
++  max-width: 600px;
++  margin: 0 auto;
++}
++
++.profile-card {
++  background: var(--color-surface);
++  border: 1px solid var(--color-border);
++  border-radius: var(--radius-lg);
++  padding: var(--space-xl);
++  box-shadow: var(--shadow-lg);
++}
++
++.profile-tabs {
++  display: flex;
++  border-bottom: 1px solid var(--color-border);
++  margin-bottom: var(--space-lg);
++  gap: var(--space-md);
++}
++
++.profile-tab-btn {
++  background: none;
++  border: none;
++  color: var(--color-text-muted);
++  font-family: var(--font-family);
++  font-size: var(--font-size-base);
++  font-weight: 600;
++  padding: var(--space-sm) 0;
++  cursor: pointer;
++  transition: color var(--transition);
++  position: relative;
++}
++
++.profile-tab-btn:hover {
++  color: var(--color-text);
++}
++
++.profile-tab-btn--active {
++  color: var(--color-primary);
++}
++
++.profile-tab-btn--active::after {
++  content: '';
++  position: absolute;
++  bottom: -1px;
++  left: 0;
++  width: 100%;
++  height: 2px;
++  background: var(--color-primary);
++}
++
++.profile-form {
++  display: flex;
++  flex-direction: column;
++  gap: var(--space-md);
++}
++
++.profile-info-grid {
++  display: grid;
++  grid-template-columns: 1fr;
++  gap: var(--space-md);
++}
++
++.profile-info-item {
++  display: flex;
++  flex-direction: column;
++  gap: var(--space-xs);
++}
++
++.profile-info-label {
++  font-size: var(--font-size-sm);
++  color: var(--color-text-muted);
++  font-weight: 500;
++}
++
++.profile-info-value {
++  font-size: var(--font-size-base);
++  color: var(--color-text);
++  font-weight: 600;
++  padding: 10px 0;
++}
++
++.profile-status-message {
++  padding: 10px 14px;
++  border-radius: var(--radius-sm);
++  font-size: var(--font-size-sm);
++  margin-bottom: var(--space-md);
++}
++
++.profile-status-message--success {
++  background: rgba(16, 185, 129, 0.15);
++  border: 1px solid rgba(16, 185, 129, 0.4);
++  color: #a7f3d0;
++}
++
++.profile-status-message--error {
++  background: rgba(239, 68, 68, 0.15);
++  border: 1px solid rgba(239, 68, 68, 0.4);
++  color: #fca5a5;
++}
+diff --git a/client/src/pages/ProfilePage.tsx b/client/src/pages/ProfilePage.tsx
+index 2cefe67..542a997 100644
+--- a/client/src/pages/ProfilePage.tsx
++++ b/client/src/pages/ProfilePage.tsx
+@@ -1,8 +1,111 @@
+-import React from 'react';
++import React, { useState, useEffect } from 'react';
+ import { useAuth } from '@/context/AuthContext';
++import { authApi } from '@/api/auth.api';
++import './ProfilePage.css';
+ 
+ const ProfilePage: React.FC = () => {
+-  const { user } = useAuth();
++  const { user, fetchMe, logout } = useAuth();
++  const [activeTab, setActiveTab] = useState<'info' | 'password'>('info');
++
++  // Profile Form State
++  const [fullName, setFullName] = useState('');
++  const [phone, setPhone] = useState('');
++  const [isUpdating, setIsUpdating] = useState(false);
++
++  // Password Form State
++  const [oldPassword, setOldPassword] = useState('');
++  const [newPassword, setNewPassword] = useState('');
++  const [confirmPassword, setConfirmPassword] = useState('');
++  const [isChangingPassword, setIsChangingPassword] = useState(false);
++
++  // Status message state
++  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
++
++  // Load user data into state
++  useEffect(() => {
++    if (user) {
++      setFullName(user.fullName);
++      setPhone(user.phone || '');
++    }
++  }, [user]);
++
++  // Clear messages when tab changes
++  useEffect(() => {
++    setMessage(null);
++  }, [activeTab]);
++
++  const handleUpdateProfile = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setMessage(null);
++
++    if (!fullName.trim()) {
++      setMessage({ text: 'Họ tên không được để trống', type: 'error' });
++      return;
++    }
++
++    setIsUpdating(true);
++    try {
++      await authApi.updateProfile({ fullName, phone });
++      await fetchMe();
++      setMessage({ text: 'Cập nhật thông tin cá nhân thành công', type: 'success' });
++    } catch (err: any) {
++      const errMsg = err.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
++      setMessage({ text: errMsg, type: 'error' });
++    } finally {
++      setIsUpdating(false);
++    }
++  };
++
++  const handleChangePassword = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setMessage(null);
++
++    if (!oldPassword || !newPassword || !confirmPassword) {
++      setMessage({ text: 'Vui lòng nhập đầy đủ tất cả các trường', type: 'error' });
++      return;
++    }
++
++    if (newPassword.length < 8) {
++      setMessage({ text: 'Mật khẩu mới phải có ít nhất 8 ký tự', type: 'error' });
++      return;
++    }
++
++    if (!/[A-Z]/.test(newPassword)) {
++      setMessage({ text: 'Mật khẩu mới phải chứa ít nhất 1 chữ hoa', type: 'error' });
++      return;
++    }
++
++    if (!/[0-9]/.test(newPassword)) {
++      setMessage({ text: 'Mật khẩu mới phải chứa ít nhất 1 số', type: 'error' });
++      return;
++    }
++
++    if (newPassword !== confirmPassword) {
++      setMessage({ text: 'Xác nhận mật khẩu mới không khớp', type: 'error' });
++      return;
++    }
++
++    setIsChangingPassword(true);
++    try {
++      await authApi.changePassword({ oldPassword, newPassword });
++      setMessage({
++        text: 'Đổi mật khẩu thành công! Hệ thống sẽ tự động đăng xuất sau 2 giây...',
++        type: 'success',
++      });
++      setOldPassword('');
++      setNewPassword('');
++      setConfirmPassword('');
++      // Đăng xuất sau 2 giây
++      setTimeout(() => {
++        logout();
++      }, 2000);
++    } catch (err: any) {
++      const errMsg = err.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
++      setMessage({ text: errMsg, type: 'error' });
++    } finally {
++      setIsChangingPassword(false);
++    }
++  };
+ 
+   return (
+     <div className="page">
+@@ -10,13 +113,139 @@ const ProfilePage: React.FC = () => {
+         <h1>Hồ sơ cá nhân</h1>
+       </header>
+       <main className="page-main">
+-        <div className="stat-card" style={{ maxWidth: '480px' }}>
+-          <h3>Thông tin tài khoản</h3>
+-          <p style={{ marginTop: '12px' }}><strong>Họ tên:</strong> {user?.fullName}</p>
+-          <p><strong>Email:</strong> {user?.email}</p>
+-          <p><strong>Vai trò:</strong> {user?.role}</p>
+-          {user?.studentId && <p><strong>MSSV:</strong> {user.studentId}</p>}
+-          {user?.phone && <p><strong>SĐT:</strong> {user.phone}</p>}
++        <div className="profile-container">
++          <div className="profile-card">
++            {/* Tabs */}
++            <div className="profile-tabs">
++              <button
++                className={`profile-tab-btn ${activeTab === 'info' ? 'profile-tab-btn--active' : ''}`}
++                onClick={() => setActiveTab('info')}
++              >
++                Thông tin cá nhân
++              </button>
++              <button
++                className={`profile-tab-btn ${activeTab === 'password' ? 'profile-tab-btn--active' : ''}`}
++                onClick={() => setActiveTab('password')}
++              >
++                Đổi mật khẩu
++              </button>
++            </div>
++
++            {/* Status Messages */}
++            {message && (
++              <div className={`profile-status-message profile-status-message--${message.type}`}>
++                {message.text}
++              </div>
++            )}
++
++            {/* Tab 1: Info */}
++            {activeTab === 'info' && (
++              <form onSubmit={handleUpdateProfile} className="profile-form">
++                <div className="profile-info-grid">
++                  <div className="profile-info-item">
++                    <span className="profile-info-label">Email</span>
++                    <span className="profile-info-value">{user?.email}</span>
++                  </div>
++
++                  <div className="profile-info-item">
++                    <span className="profile-info-label">Vai trò</span>
++                    <span className="profile-info-value">{user?.role}</span>
++                  </div>
++
++                  {user?.studentId && (
++                    <div className="profile-info-item">
++                      <span className="profile-info-label">Mã số sinh viên (MSSV)</span>
++                      <span className="profile-info-value">{user.studentId}</span>
++                    </div>
++                  )}
++                </div>
++
++                <hr style={{ border: '0', borderTop: '1px solid var(--color-border)', margin: '10px 0' }} />
++
++                <div className="form-group">
++                  <label htmlFor="fullName">Họ và tên</label>
++                  <input
++                    id="fullName"
++                    type="text"
++                    value={fullName}
++                    onChange={(e) => setFullName(e.target.value)}
++                    placeholder="Nhập họ và tên"
++                    required
++                  />
++                </div>
++
++                <div className="form-group">
++                  <label htmlFor="phone">Số điện thoại</label>
++                  <input
++                    id="phone"
++                    type="text"
++                    value={phone}
++                    onChange={(e) => setPhone(e.target.value)}
++                    placeholder="Nhập số điện thoại"
++                  />
++                </div>
++
++                <button
++                  type="submit"
++                  className="btn btn-primary"
++                  style={{ alignSelf: 'flex-start', marginTop: '10px' }}
++                  disabled={isUpdating}
++                >
++                  {isUpdating ? 'Đang cập nhật...' : 'Lưu thông tin'}
++                </button>
++              </form>
++            )}
++
++            {/* Tab 2: Password */}
++            {activeTab === 'password' && (
++              <form onSubmit={handleChangePassword} className="profile-form">
++                <div className="form-group">
++                  <label htmlFor="oldPassword">Mật khẩu cũ</label>
++                  <input
++                    id="oldPassword"
++                    type="password"
++                    value={oldPassword}
++                    onChange={(e) => setOldPassword(e.target.value)}
++                    placeholder="Nhập mật khẩu hiện tại"
++                    required
++                  />
++                </div>
++
++                <div className="form-group">
++                  <label htmlFor="newPassword">Mật khẩu mới</label>
++                  <input
++                    id="newPassword"
++                    type="password"
++                    value={newPassword}
++                    onChange={(e) => setNewPassword(e.target.value)}
++                    placeholder="Ít nhất 8 ký tự, 1 chữ hoa, 1 chữ số"
++                    required
++                  />
++                </div>
++
++                <div className="form-group">
++                  <label htmlFor="confirmPassword">Xác nhận mật khẩu mới</label>
++                  <input
++                    id="confirmPassword"
++                    type="password"
++                    value={confirmPassword}
++                    onChange={(e) => setConfirmPassword(e.target.value)}
++                    placeholder="Nhập lại mật khẩu mới"
++                    required
++                  />
++                </div>
++
++                <button
++                  type="submit"
++                  className="btn btn-primary"
++                  style={{ alignSelf: 'flex-start', marginTop: '10px' }}
++                  disabled={isChangingPassword}
++                >
++                  {isChangingPassword ? 'Đang cập nhật...' : 'Đổi mật khẩu'}
++                </button>
++              </form>
++            )}
++          </div>
+         </div>
+       </main>
+     </div>
+diff --git a/client/src/types/index.ts b/client/src/types/index.ts
+index cfba045..f06cf10 100644
+--- a/client/src/types/index.ts
++++ b/client/src/types/index.ts
+@@ -104,3 +104,29 @@ export interface ApiError {
+   message: string;
+   errors?: Record<string, string>;
+ }
++
++// ============================================================
++// Payload Types
++// ============================================================
++
++export interface UpdateProfilePayload {
++  fullName: string;
++  phone?: string;
++  avatarUrl?: string;
++}
++
++export interface ChangePasswordPayload {
++  oldPassword?: string;
++  newPassword?: string;
++}
++
++export interface ForgotPasswordPayload {
++  email: string;
++}
++
++export interface ResetPasswordPayload {
++  email: string;
++  otp: string;
++  newPassword?: string;
++}
++
+diff --git a/server/prisma/schema.prisma b/server/prisma/schema.prisma
+index e4158bb..147ce26 100644
+--- a/server/prisma/schema.prisma
++++ b/server/prisma/schema.prisma
+@@ -28,6 +28,9 @@ model User {
+   lockedUntil         DateTime?
+   verificationToken   String?
+   verificationExpires DateTime?
++  resetPasswordToken   String?
++  resetPasswordExpires DateTime?
++  resetPasswordLastSent DateTime?
+   createdAt           DateTime  @default(now())
+   updatedAt           DateTime  @updatedAt
+ 
+diff --git a/server/src/controllers/auth.controller.ts b/server/src/controllers/auth.controller.ts
+index 39fd919..3a4b78d 100644
+--- a/server/src/controllers/auth.controller.ts
++++ b/server/src/controllers/auth.controller.ts
+@@ -4,7 +4,7 @@ import { hashPassword, comparePassword } from '@/utils/bcrypt';
+ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '@/utils/jwt';
+ import { sendSuccess } from '@/utils/response';
+ import { AppError } from '@/middleware/errorHandler';
+-import { sendVerificationEmail } from '@/utils/mailer';
++import { sendVerificationEmail, sendResetPasswordEmail } from '@/utils/mailer';
+ import type { UserRole } from '@/types';
+ 
+ // ── Cấu hình Brute Force ────────────────────────────────────────
+@@ -252,3 +252,161 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
+     next(err);
+   }
+ };
++
++// ── PUT /api/auth/me (Cập nhật hồ sơ cá nhân) ─────────────────────
++export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
++  try {
++    const userId = req.user?.sub;
++    if (!userId) throw new AppError('Không xác định được người dùng', 401);
++
++    const { fullName, phone, avatarUrl } = req.body;
++
++    const user = await prisma.user.findUnique({ where: { id: userId } });
++    if (!user) throw new AppError('Người dùng không tồn tại', 404);
++
++    const updated = await prisma.user.update({
++      where: { id: userId },
++      data: { fullName, phone, avatarUrl },
++      select: {
++        id: true,
++        email: true,
++        fullName: true,
++        role: true,
++        studentId: true,
++        phone: true,
++        avatarUrl: true,
++        createdAt: true,
++        updatedAt: true,
++      },
++    });
++
++    sendSuccess(res, updated, 'Cập nhật hồ sơ cá nhân thành công');
++  } catch (err) {
++    next(err);
++  }
++};
++
++// ── PATCH /api/auth/me/password (Người dùng tự đổi mật khẩu) ───────
++export const changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
++  try {
++    const userId = req.user?.sub;
++    if (!userId) throw new AppError('Không xác định được người dùng', 401);
++
++    const { oldPassword, newPassword } = req.body;
++    if (!oldPassword || !newPassword) {
++      throw new AppError('Mật khẩu cũ và mật khẩu mới là bắt buộc', 400);
++    }
++
++    const user = await prisma.user.findUnique({ where: { id: userId } });
++    if (!user) throw new AppError('Người dùng không tồn tại', 404);
++
++    const isMatch = await comparePassword(oldPassword, user.password);
++    if (!isMatch) {
++      throw new AppError('Mật khẩu cũ không chính xác', 400);
++    }
++
++    const hashed = await hashPassword(newPassword);
++    await prisma.user.update({
++      where: { id: userId },
++      data: { password: hashed },
++    });
++
++    sendSuccess(res, null, 'Đổi mật khẩu thành công');
++  } catch (err) {
++    next(err);
++  }
++};
++
++// ── POST /api/auth/forgot-password (Quên mật khẩu - gửi OTP) ────────
++export const forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
++  try {
++    const { email } = req.body;
++    if (!email) throw new AppError('Email là bắt buộc', 400);
++
++    const user = await prisma.user.findUnique({ where: { email } });
++
++    // Để tránh timing attack phân biệt email tồn tại hay không,
++    // ta chạy các bước hash và delay giả lập cho email không tồn tại.
++    if (!user) {
++      // Giả lập thời gian bằng cách hash một chuỗi rác
++      await hashPassword('dummy_password');
++      // Trả về 200 thành công giả
++      sendSuccess(res, null, 'Nếu email tồn tại trên hệ thống, mã OTP đã được gửi về email của bạn');
++      return;
++    }
++
++    // Rate Limit: Kiểm tra khoảng cách gửi OTP gần nhất (60 giây)
++    const now = new Date();
++    if (user.resetPasswordLastSent) {
++      const diffMs = now.getTime() - new Date(user.resetPasswordLastSent).getTime();
++      if (diffMs < 60 * 1000) {
++        const secondsLeft = Math.ceil((60 * 1000 - diffMs) / 1000);
++        throw new AppError(`Vui lòng đợi ${secondsLeft} giây trước khi yêu cầu mã OTP mới`, 429);
++      }
++    }
++
++    // Sinh OTP ngẫu nhiên 6 chữ số
++    const otp = Math.floor(100000 + Math.random() * 900000).toString();
++    // Mã hoá OTP bằng bcrypt trước khi lưu vào DB
++    const hashedOtp = await hashPassword(otp);
++    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
++
++    await prisma.user.update({
++      where: { id: user.id },
++      data: {
++        resetPasswordToken: hashedOtp,
++        resetPasswordExpires: otpExpires,
++        resetPasswordLastSent: now,
++      },
++    });
++
++    // Gửi email chứa mã OTP
++    await sendResetPasswordEmail(email, otp);
++
++    sendSuccess(res, null, 'Nếu email tồn tại trên hệ thống, mã OTP đã được gửi về email của bạn');
++  } catch (err) {
++    next(err);
++  }
++};
++
++// ── POST /api/auth/reset-password (Quên mật khẩu - xác nhận OTP & mật khẩu mới) ──
++export const resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
++  try {
++    const { email, otp, newPassword } = req.body;
++    if (!email || !otp || !newPassword) {
++      throw new AppError('Email, mã OTP và mật khẩu mới là bắt buộc', 400);
++    }
++
++    const user = await prisma.user.findUnique({ where: { email } });
++    if (!user || !user.resetPasswordToken || !user.resetPasswordExpires) {
++      throw new AppError('Yêu cầu khôi phục mật khẩu không hợp lệ', 400);
++    }
++
++    // Kiểm tra hết hạn
++    if (new Date(user.resetPasswordExpires) < new Date()) {
++      throw new AppError('Mã OTP đã hết hạn', 400);
++    }
++
++    // So sánh OTP
++    const isOtpMatch = await comparePassword(otp, user.resetPasswordToken);
++    if (!isOtpMatch) {
++      throw new AppError('Mã OTP không chính xác', 400);
++    }
++
++    // Mã hoá mật khẩu mới và reset token
++    const hashedPass = await hashPassword(newPassword);
++    await prisma.user.update({
++      where: { id: user.id },
++      data: {
++        password: hashedPass,
++        resetPasswordToken: null,
++        resetPasswordExpires: null,
++      },
++    });
++
++    sendSuccess(res, null, 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.');
++  } catch (err) {
++    next(err);
++  }
++};
++
+diff --git a/server/src/middleware/validator.ts b/server/src/middleware/validator.ts
+new file mode 100644
+index 0000000..76316f8
+--- /dev/null
++++ b/server/src/middleware/validator.ts
+@@ -0,0 +1,13 @@
++import { Request, Response, NextFunction } from 'express';
++import { validationResult } from 'express-validator';
++import { sendError } from '@/utils/response';
++
++export const validateRequest = (req: Request, res: Response, next: NextFunction): void => {
++  const errors = validationResult(req);
++  if (!errors.isEmpty()) {
++    const firstError = errors.array()[0];
++    sendError(res, firstError.msg, 400);
++    return;
++  }
++  next();
++};
+diff --git a/server/src/routes/auth.routes.ts b/server/src/routes/auth.routes.ts
+index 68ae3da..103645f 100644
+--- a/server/src/routes/auth.routes.ts
++++ b/server/src/routes/auth.routes.ts
+@@ -1,7 +1,19 @@
+ import { Router } from 'express';
+ import { body } from 'express-validator';
+-import { register, login, refresh, logout, getMe, verifyEmail } from '@/controllers/auth.controller';
++import {
++  register,
++  login,
++  refresh,
++  logout,
++  getMe,
++  verifyEmail,
++  updateProfile,
++  changePassword,
++  forgotPassword,
++  resetPassword
++} from '@/controllers/auth.controller';
+ import { verifyJWT } from '@/middleware/auth';
++import { validateRequest } from '@/middleware/validator';
+ 
+ const router = Router();
+ 
+@@ -23,16 +35,48 @@ const loginValidation = [
+   body('password').notEmpty().withMessage('Mật khẩu không được để trống'),
+ ];
+ 
++const updateProfileValidation = [
++  body('fullName').trim().notEmpty().withMessage('Họ tên không được để trống'),
++  body('phone').optional({ checkFalsy: true }).isMobilePhone('any').withMessage('Số điện thoại không hợp lệ'),
++];
++
++const changePasswordValidation = [
++  body('oldPassword').notEmpty().withMessage('Mật khẩu cũ không được để trống'),
++  body('newPassword')
++    .isLength({ min: 8 })
++    .withMessage('Mật khẩu mới phải có ít nhất 8 ký tự')
++    .matches(/[A-Z]/)
++    .withMessage('Mật khẩu mới phải chứa ít nhất 1 chữ hoa')
++    .matches(/[0-9]/)
++    .withMessage('Mật khẩu mới phải chứa ít nhất 1 số'),
++];
++
++const forgotPasswordValidation = [
++  body('email').isEmail().withMessage('Email không hợp lệ').normalizeEmail(),
++];
++
++const resetPasswordValidation = [
++  body('email').isEmail().withMessage('Email không hợp lệ').normalizeEmail(),
++  body('otp').isLength({ min: 6, max: 6 }).withMessage('Mã OTP phải có đúng 6 chữ số'),
++  body('newPassword')
++    .isLength({ min: 8 })
++    .withMessage('Mật khẩu mới phải có ít nhất 8 ký tự')
++    .matches(/[A-Z]/)
++    .withMessage('Mật khẩu mới phải chứa ít nhất 1 chữ hoa')
++    .matches(/[0-9]/)
++    .withMessage('Mật khẩu mới phải chứa ít nhất 1 số'),
++];
++
+ // ── Routes ─────────────────────────────────────────────────────
+ 
+ // POST   /api/auth/register
+-router.post('/register', registerValidation, register);
++router.post('/register', registerValidation, validateRequest, register);
+ 
+ // POST   /api/auth/verify-email
+ router.post('/verify-email', verifyEmail);
+ 
+ // POST   /api/auth/login
+-router.post('/login', loginValidation, login);
++router.post('/login', loginValidation, validateRequest, login);
+ 
+ // POST   /api/auth/refresh
+ router.post('/refresh', refresh);
+@@ -43,4 +87,16 @@ router.post('/logout', verifyJWT, logout);
+ // GET    /api/auth/me
+ router.get('/me', verifyJWT, getMe);
+ 
++// PUT    /api/auth/me
++router.put('/me', verifyJWT, updateProfileValidation, validateRequest, updateProfile);
++
++// PATCH  /api/auth/me/password
++router.patch('/me/password', verifyJWT, changePasswordValidation, validateRequest, changePassword);
++
++// POST   /api/auth/forgot-password
++router.post('/forgot-password', forgotPasswordValidation, validateRequest, forgotPassword);
++
++// POST   /api/auth/reset-password
++router.post('/reset-password', resetPasswordValidation, validateRequest, resetPassword);
++
+ export default router;
+diff --git a/server/src/utils/mailer.ts b/server/src/utils/mailer.ts
+index 679047f..60f8972 100644
+--- a/server/src/utils/mailer.ts
++++ b/server/src/utils/mailer.ts
+@@ -38,3 +38,33 @@ export const sendVerificationEmail = async (toEmail: string, otp: string) => {
+     throw new Error('Không thể gửi email xác nhận. Vui lòng kiểm tra lại cấu hình.');
+   }
+ };
++
++export const sendResetPasswordEmail = async (toEmail: string, otp: string) => {
++  const mailOptions = {
++    from: `"KTX Dormitory Admin" <${env.EMAIL_USER}>`,
++    to: toEmail,
++    subject: 'Mã xác nhận khôi phục mật khẩu Ký túc xá',
++    html: `
++      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
++        <h2 style="color: #1e3a8a; text-align: center;">Khôi phục mật khẩu</h2>
++        <p>Chào bạn,</p>
++        <p>Chúng tôi nhận được yêu cầu khôi phục mật khẩu cho tài khoản của bạn. Vui lòng sử dụng mã xác nhận dưới đây để tiến hành thiết lập mật khẩu mới:</p>
++        <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 6px; margin: 20px 0;">
++          ${otp}
++        </div>
++        <p style="color: #ef4444; font-size: 14px;">Mã này sẽ hết hạn sau 10 phút.</p>
++        <p>Nếu bạn không thực hiện yêu cầu này, tài khoản của bạn vẫn an toàn và bạn có thể bỏ qua email này.</p>
++        <br />
++        <p>Trân trọng,<br />Ban quản lý KTX</p>
++      </div>
++    `,
++  };
++
++  try {
++    await transporter.sendMail(mailOptions);
++  } catch (error) {
++    console.error('Error sending reset password email:', error);
++    throw new Error('Không thể gửi email khôi phục mật khẩu. Vui lòng kiểm tra lại cấu hình.');
++  }
++};
++
+-- 
+2.51.0.windows.1
+

@@ -20,6 +20,7 @@ interface AuthContextValue {
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (role: Role | Role[]) => boolean;
+  fetchMe: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,6 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchMe = useCallback(async () => {
+    try {
+      const { data } = await authApi.getMe();
+      setUser(data.data);
+    } catch (err) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      setUser(null);
+      throw err;
+    }
+  }, []);
+
   // Kiểm tra session khi app load
   useEffect(() => {
     const bootstrap = async () => {
@@ -40,17 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       try {
-        const { data } = await authApi.getMe();
-        setUser(data.data);
+        await fetchMe();
       } catch {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        // silent
       } finally {
         setIsLoading(false);
       }
     };
     bootstrap();
-  }, []);
+  }, [fetchMe]);
 
   const login = useCallback(async (payload: LoginPayload) => {
     const { data } = await authApi.login(payload);
@@ -61,11 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
-    const { data } = await authApi.register(payload);
-    const { accessToken, refreshToken, user: newUser } = data.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(newUser);
+    // Chỉ gọi API để tạo user và gửi email OTP, không lưu token đăng nhập ở đây
+    await authApi.register(payload);
   }, []);
 
   const logout = useCallback(async () => {
@@ -97,8 +105,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       register,
       logout,
       hasRole,
+      fetchMe,
     }),
-    [user, isLoading, login, register, logout, hasRole]
+    [user, isLoading, login, register, logout, hasRole, fetchMe]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
