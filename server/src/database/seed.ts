@@ -65,14 +65,7 @@ async function main() {
     console.log('ℹ️ Tòa nhà Tòa A đã tồn tại.');
   }
 
-  // 4. Tạo phòng mẫu
-  const existingRoom = await prisma.room.findUnique({
-    where: { roomNumber: 'P101' },
-  });
-
-  if (!existingRoom) {
-    const room = await prisma.room.create({
-  // 3. Create Room P101
+  // 4. Create Room P101
   const roomNumber = 'P101';
   let room = await prisma.room.findUnique({ where: { roomNumber } });
   if (!room) {
