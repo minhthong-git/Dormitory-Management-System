@@ -19,9 +19,9 @@ const contractStatusLabel: Record<string, string> = {
 };
 
 const roomTypeLabel: Record<string, string> = {
-  SINGLE: 'Phòng đơn',
-  DOUBLE: 'Phòng đôi',
-  QUAD: 'Phòng 4 người',
+  SMALL: 'Phòng nhỏ',
+  STANDARD: 'Phòng tiêu chuẩn',
+  LARGE: 'Phòng đông',
 };
 
 // ── Skeleton card ──────────────────────────────────────────────

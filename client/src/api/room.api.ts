@@ -12,7 +12,7 @@ export interface CreateRoomPayload {
   roomNumber: string;
   floor: number;
   capacity: number;
-  type: 'SINGLE' | 'DOUBLE' | 'QUAD';
+  type: 'SMALL' | 'STANDARD' | 'LARGE';
   pricePerMonth: number;
   description?: string;
 }
@@ -20,6 +20,9 @@ export interface CreateRoomPayload {
 export const roomApi = {
   getAll: (params?: RoomFilters) =>
     axiosClient.get<PaginatedResponse<Room>>('/rooms', { params }),
+
+  getAvailable: (params?: { page?: number; limit?: number }) =>
+    axiosClient.get<PaginatedResponse<Room>>('/rooms/available', { params }),
 
   getById: (id: string) =>
     axiosClient.get<ApiResponse<Room>>(`/rooms/${id}`),

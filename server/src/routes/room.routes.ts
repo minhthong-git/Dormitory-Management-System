@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { verifyJWT, requireRoles } from '@/middleware/auth';
-import { getRooms, getRoomById, createRoom, updateRoom, deleteRoom } from '@/controllers/room.controller';
+import { getRooms, getAvailableRooms, getRoomById, createRoom, updateRoom, deleteRoom } from '@/controllers/room.controller';
 
 const router = Router();
+
+// GET  /api/rooms/available - Sinh viên xem phòng trống (phải đặt trước /:id)
+router.get('/available', verifyJWT, getAvailableRooms);
 
 // GET  /api/rooms         — tất cả user đã login
 router.get('/', verifyJWT, getRooms);

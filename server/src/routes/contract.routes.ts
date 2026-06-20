@@ -13,6 +13,9 @@ import {
   updateContract,
   extendContract,
   deleteContract,
+  bookBed,
+  approveContract,
+  rejectContract
 } from '@/controllers/contract.controller';
 
 const router = Router();
@@ -47,6 +50,15 @@ router.get('/:id', verifyJWT, getContractById);
 
 // POST   /api/contracts        — ADMIN/STAFF only (tạo hợp đồng cho SV)
 router.post('/', verifyJWT, requireRoles('ADMIN', 'STAFF'), createContractValidation, validateRequest, createContract);
+
+// POST   /api/contracts/book   — STUDENT tự đặt phòng
+router.post('/book', verifyJWT, bookBed);
+
+// PATCH  /api/contracts/:id/approve — ADMIN/STAFF duyệt phòng
+router.patch('/:id/approve', verifyJWT, requireRoles('ADMIN', 'STAFF'), approveContract);
+
+// PATCH  /api/contracts/:id/reject  — ADMIN/STAFF từ chối phòng
+router.patch('/:id/reject', verifyJWT, requireRoles('ADMIN', 'STAFF'), rejectContract);
 
 // POST   /api/contracts/check-in — ADMIN/STAFF only
 router.post('/check-in', verifyJWT, requireRoles('ADMIN', 'STAFF'), checkInValidation, validateRequest, checkIn);

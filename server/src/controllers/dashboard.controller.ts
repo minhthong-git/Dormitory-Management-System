@@ -59,7 +59,16 @@ export const getDashboardStats = async (
       // ── Student stats ──────────────────────────────────────
       const student = await prisma.student.findUnique({ where: { userId } });
       if (!student) {
-        throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+        // Nếu sinh viên mới đăng ký chưa có profile, trả về thống kê rỗng
+        sendSuccess(res, {
+          role: 'STUDENT',
+          activeContract: null,
+          myRoom: null,
+          contractStatus: null,
+          pendingInvoices: 0,
+          overdueInvoices: 0,
+        }, 'Lấy thống kê cá nhân thành công');
+        return;
       }
 
       const [activeContract, pendingInvoices, overdueInvoices] = await Promise.all([

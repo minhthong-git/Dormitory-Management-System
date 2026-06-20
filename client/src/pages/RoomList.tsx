@@ -13,7 +13,7 @@ export default function RoomList() {
   
   const [formData, setFormData] = useState({
     roomNumber: '',
-    type: 'SINGLE',
+    type: 'STANDARD',
     capacity: 1,
     pricePerMonth: 0,
     floor: 1,
@@ -50,7 +50,7 @@ export default function RoomList() {
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
-      roomNumber: '', type: 'SINGLE', capacity: 1, pricePerMonth: 0, floor: 1, description: '', status: 'AVAILABLE'
+      roomNumber: '', type: 'STANDARD', capacity: 4, pricePerMonth: 0, floor: 1, description: '', status: 'AVAILABLE'
     });
     setIsModalOpen(true);
   };
@@ -215,9 +215,9 @@ export default function RoomList() {
                 <div className="form-group">
                   <label>Loại phòng</label>
                   <select className="form-select" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                    <option value="SINGLE">Phòng Đơn</option>
-                    <option value="DOUBLE">Phòng Đôi</option>
-                    <option value="QUAD">Phòng 4 người</option>
+                    <option value="SMALL">Phòng nhỏ</option>
+                    <option value="STANDARD">Phòng tiêu chuẩn</option>
+                    <option value="LARGE">Phòng đông</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -229,7 +229,23 @@ export default function RoomList() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Giá phòng/Tháng (VNĐ)</label>
-                  <input type="number" className="form-input" min="0" step="1000" value={formData.pricePerMonth} onChange={(e) => setFormData({...formData, pricePerMonth: Number(e.target.value)})} required />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={formData.pricePerMonth === 0 ? '' : formData.pricePerMonth.toLocaleString('vi-VN')} 
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        setFormData({...formData, pricePerMonth: rawValue ? Number(rawValue) : 0});
+                      }} 
+                      placeholder="0" 
+                      required 
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <span style={{ position: 'absolute', right: '12px', color: 'var(--color-text-muted)', fontSize: '0.9rem', pointerEvents: 'none' }}>
+                      VNĐ
+                    </span>
+                  </div>
                 </div>
                 {editingId && (
                   <div className="form-group">

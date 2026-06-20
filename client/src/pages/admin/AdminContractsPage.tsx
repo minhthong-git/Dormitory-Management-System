@@ -291,6 +291,33 @@ const AdminContractsPage: React.FC = () => {
     } finally { setIsSaving(false); }
   };
 
+  // ── Approve/Reject ─────────────────────────────────────────────
+  const handleApprove = async (id: string) => {
+    if (!window.confirm('Xác nhận duyệt hợp đồng này?')) return;
+    setIsSaving(true);
+    try {
+      await contractApi.approve(id);
+      fetchContracts();
+      fetchDropdowns();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(msg || 'Lỗi khi duyệt hợp đồng');
+    } finally { setIsSaving(false); }
+  };
+
+  const handleReject = async (id: string) => {
+    if (!window.confirm('Xác nhận từ chối hợp đồng này?')) return;
+    setIsSaving(true);
+    try {
+      await contractApi.reject(id);
+      fetchContracts();
+      fetchDropdowns();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(msg || 'Lỗi khi từ chối hợp đồng');
+    } finally { setIsSaving(false); }
+  };
+
   return (
     <div className="page">
       {/* ── Header ──────────────────────────────────────────────── */}
@@ -475,16 +502,22 @@ const AdminContractsPage: React.FC = () => {
                               </>
                             )}
                             {status === 'PENDING' && (
-                              <button
-                                className="btn btn-sm btn-danger"
-                                onClick={() => {
-                                  setSelectedContract(contract);
-                                  setFormError('');
-                                  setModal('terminate');
-                                }}
-                              >
-                                Hủy
-                              </button>
+                              <>
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  onClick={() => handleApprove(contract.id)}
+                                  disabled={isSaving}
+                                >
+                                  Duyệt
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-danger-outline"
+                                  onClick={() => handleReject(contract.id)}
+                                  disabled={isSaving}
+                                >
+                                  Từ chối
+                                </button>
+                              </>
                             )}
                             {status !== 'ACTIVE' && (
                               <button

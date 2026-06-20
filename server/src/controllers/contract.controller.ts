@@ -157,6 +157,108 @@ export const createContract = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+// ── POST /api/contracts/book ───────────────────────────────────────
+export const bookBed = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { sub: userId } = req.user!;
+    const { bedId, startDate, endDate } = req.body;
+
+    const student = await prisma.student.findUnique({ where: { userId } });
+    if (!student || student.gender === 'OTHER') {
+      throw new AppError('Vui lòng cập nhật giới tính (Nam/Nữ) trong hồ sơ cá nhân để thuê phòng', 400);
+    }
+
+    const bed = await prisma.bed.findUnique({ where: { id: bedId }, include: { room: true } });
+    if (!bed) throw new AppError('Giường không tồn tại', 404);
+    if (bed.status !== 'AVAILABLE') throw new AppError('Giường đã được người khác đặt hoặc đang sử dụng', 400);
+    if (bed.room.status === 'MAINTENANCE') throw new AppError('Phòng đang bảo trì', 400);
+    
+    // Check Room Gender
+    if (bed.room.genderType !== student.gender) {
+      throw new AppError('Phòng này không dành cho giới tính của bạn', 400);
+    }
+
+    // Check if student already has ACTIVE or PENDING contract
+    const existingContract = await prisma.contract.findFirst({
+      where: { 
+        studentId: student.id, 
+        status: { in: ['ACTIVE', 'PENDING'] } 
+      }
+    });
+    if (existingContract) throw new AppError('Bạn đã có hợp đồng đang hoạt động hoặc chờ duyệt', 409);
+
+    const price = bed.room.pricePerMonth;
+    const sDate = new Date(startDate || new Date());
+    const eDate = new Date(endDate || new Date(new Date().setMonth(new Date().getMonth() + 6))); // Default 6 months
+
+    const [contract] = await prisma.$transaction([
+      prisma.contract.create({
+        data: {
+          studentId: student.id,
+          bedId,
+          startDate: sDate,
+          endDate: eDate,
+          price: price,
+          deposit: price,
+          monthlyFee: price,
+          status: 'PENDING',
+        },
+      }),
+      prisma.bed.update({ where: { id: bedId }, data: { status: 'RESERVED' } }),
+    ]);
+
+    sendSuccess(res, contract, 'Đã gửi yêu cầu đặt phòng thành công', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /api/contracts/:id/approve ───────────────────────────────
+export const approveContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const contract = await prisma.contract.findUnique({ where: { id }, include: { bed: { include: { room: true } } } });
+    if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
+    if (contract.status !== 'PENDING') throw new AppError('Hợp đồng không ở trạng thái chờ duyệt', 400);
+
+    const [updated] = await prisma.$transaction([
+      prisma.contract.update({ where: { id }, data: { status: 'ACTIVE' } }),
+      prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'OCCUPIED' } }),
+      prisma.room.update({
+        where: { id: contract.bed.roomId },
+        data: {
+          currentOccupancy: { increment: 1 },
+          status: contract.bed.room.currentOccupancy + 1 >= contract.bed.room.capacity ? 'FULL' : 'AVAILABLE',
+        },
+      }),
+    ]);
+
+    sendSuccess(res, updated, 'Duyệt hợp đồng thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /api/contracts/:id/reject ───────────────────────────────
+export const rejectContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const contract = await prisma.contract.findUnique({ where: { id } });
+    if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
+    if (contract.status !== 'PENDING') throw new AppError('Hợp đồng không ở trạng thái chờ duyệt', 400);
+
+    const [updated] = await prisma.$transaction([
+      prisma.contract.update({ where: { id }, data: { status: 'REJECTED' } }),
+      prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'AVAILABLE' } }),
+    ]);
+
+    sendSuccess(res, updated, 'Đã từ chối hợp đồng');
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 // ── PATCH /api/contracts/:id/terminate ───────────────────────
 export const terminateContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

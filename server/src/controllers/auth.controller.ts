@@ -244,6 +244,14 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
         avatarUrl: true,
         createdAt: true,
         updatedAt: true,
+        student: {
+          select: {
+            gender: true,
+            status: true,
+            faculty: true,
+            major: true,
+          }
+        }
       },
     });
 
@@ -259,10 +267,30 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const userId = req.user?.sub;
     if (!userId) throw new AppError('Không xác định được người dùng', 401);
 
-    const { fullName, phone, avatarUrl } = req.body;
+    const { fullName, phone, avatarUrl, gender } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('Người dùng không tồn tại', 404);
+
+    if (user.role === 'STUDENT') {
+      await prisma.student.upsert({
+        where: { userId: user.id },
+        update: {
+          fullName: fullName || user.fullName,
+          phone: phone || user.phone || '',
+          gender: gender || undefined,
+        },
+        create: {
+          userId: user.id,
+          studentCode: user.studentId || `SV_${user.id.substring(0, 8)}`,
+          fullName: fullName || user.fullName,
+          email: user.email,
+          phone: phone || user.phone || '',
+          gender: gender || 'OTHER',
+          status: 'ACTIVE',
+        },
+      });
+    }
 
     const updated = await prisma.user.update({
       where: { id: userId },
@@ -277,6 +305,14 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
         avatarUrl: true,
         createdAt: true,
         updatedAt: true,
+        student: {
+          select: {
+            gender: true,
+            status: true,
+            faculty: true,
+            major: true,
+          }
+        }
       },
     });
 

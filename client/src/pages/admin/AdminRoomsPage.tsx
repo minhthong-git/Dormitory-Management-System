@@ -24,8 +24,9 @@ const AdminRoomsPage: React.FC = () => {
   const [formData, setFormData] = useState({
     roomNumber: '',
     buildingId: '',
-    type: 'SINGLE',
-    capacity: 1,
+    type: 'STANDARD',
+    genderType: 'MALE',
+    capacity: 4,
     pricePerMonth: 0,
     floor: 1,
     description: '',
@@ -71,8 +72,9 @@ const AdminRoomsPage: React.FC = () => {
     setFormData({
       roomNumber: '',
       buildingId: buildings[0]?.id || '',
-      type: 'SINGLE',
-      capacity: 1,
+      type: 'STANDARD',
+      genderType: 'MALE',
+      capacity: 4,
       pricePerMonth: 0,
       floor: 1,
       description: '',
@@ -87,6 +89,7 @@ const AdminRoomsPage: React.FC = () => {
       roomNumber: room.roomNumber,
       buildingId: room.buildingId || '',
       type: room.type,
+      genderType: room.genderType || 'MALE',
       capacity: room.capacity,
       pricePerMonth: room.pricePerMonth,
       floor: room.floor,
@@ -177,9 +180,9 @@ const AdminRoomsPage: React.FC = () => {
   const maintenanceBedsCount = beds.filter((b) => b.status === 'MAINTENANCE').length;
 
   const roomTypeLabel: Record<string, string> = {
-    SINGLE: 'Phòng đơn',
-    DOUBLE: 'Phòng đôi',
-    QUAD: 'Phòng 4 người',
+    SMALL: 'Phòng nhỏ',
+    STANDARD: 'Phòng tiêu chuẩn',
+    LARGE: 'Phòng đông',
   };
 
   return (
@@ -227,9 +230,9 @@ const AdminRoomsPage: React.FC = () => {
             <div className="form-group student-select-filter">
               <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
                 <option value="">Loại (Tất cả)</option>
-                <option value="SINGLE">Đơn</option>
-                <option value="DOUBLE">Đôi</option>
-                <option value="QUAD">4 người</option>
+                <option value="SMALL">Phòng nhỏ</option>
+                <option value="STANDARD">Phòng tiêu chuẩn</option>
+                <option value="LARGE">Phòng đông</option>
               </select>
             </div>
             <div className="form-group student-select-filter">
@@ -376,25 +379,55 @@ const AdminRoomsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Loại phòng</label>
-                  <select className="form-select" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                    <option value="SINGLE">Phòng Đơn</option>
-                    <option value="DOUBLE">Phòng Đôi</option>
-                    <option value="QUAD">Phòng 4 người</option>
+                  <select className="form-select" value={formData.type} onChange={(e) => {
+                    const type = e.target.value;
+                    let capacity = 4;
+                    if (type === 'SMALL') capacity = 2;
+                    else if (type === 'STANDARD') capacity = 4;
+                    else if (type === 'LARGE') capacity = 6;
+                    setFormData({...formData, type, capacity});
+                  }}>
+                    <option value="SMALL">Phòng nhỏ</option>
+                    <option value="STANDARD">Phòng tiêu chuẩn</option>
+                    <option value="LARGE">Phòng đông</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Sức chứa tối đa</label>
-                  <input type="number" className="form-input" min="1" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})} required />
+                  <label>Sức chứa</label>
+                  <input type="number" className="form-input" value={formData.capacity} disabled />
+                </div>
+                <div className="form-group">
+                  <label>Giới tính</label>
+                  <select className="form-select" value={formData.genderType} onChange={(e) => setFormData({...formData, genderType: e.target.value})}>
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                  </select>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Giá phòng/Tháng (VNĐ)</label>
-                  <input type="number" className="form-input" min="0" step="1000" value={formData.pricePerMonth} onChange={(e) => setFormData({...formData, pricePerMonth: Number(e.target.value)})} required />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={formData.pricePerMonth === 0 ? '' : formData.pricePerMonth.toLocaleString('vi-VN')} 
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        setFormData({...formData, pricePerMonth: rawValue ? Number(rawValue) : 0});
+                      }} 
+                      placeholder="0" 
+                      required 
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <span style={{ position: 'absolute', right: '12px', color: 'var(--color-text-muted)', fontSize: '0.9rem', pointerEvents: 'none' }}>
+                      VNĐ
+                    </span>
+                  </div>
                 </div>
                 {editingId && (
                   <div className="form-group">

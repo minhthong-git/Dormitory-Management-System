@@ -14,6 +14,12 @@ export interface User {
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
+  student?: {
+    gender?: string;
+    status?: string;
+    faculty?: string;
+    major?: string;
+  };
 }
 
 export interface Student {
@@ -41,12 +47,15 @@ export interface Room {
   floor: number;
   capacity: number;
   currentOccupancy: number;
-  type: 'SINGLE' | 'DOUBLE' | 'QUAD';
+  type: 'SMALL' | 'STANDARD' | 'LARGE';
+  genderType: 'MALE' | 'FEMALE' | 'MIXED';
   status: 'AVAILABLE' | 'FULL' | 'MAINTENANCE';
   pricePerMonth: number;
   description?: string;
   createdAt: string;
   updatedAt: string;
+  building?: { name: string };
+  beds?: Bed[];
 }
 
 export interface Bed {
@@ -54,7 +63,7 @@ export interface Bed {
   roomId: string;
   bedNumber: number;
   bedType: string;
-  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'RESERVED';
   room?: Room;
   contracts?: Contract[];
 }
@@ -68,7 +77,7 @@ export interface Contract {
   price: number;
   deposit: number;
   monthlyFee: number;
-  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING';
+  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING' | 'REJECTED';
   createdAt: string;
   updatedAt: string;
   student?: Student;
@@ -146,6 +155,7 @@ export interface UpdateProfilePayload {
   fullName: string;
   phone?: string;
   avatarUrl?: string;
+  gender?: string;
 }
 
 export interface ChangePasswordPayload {

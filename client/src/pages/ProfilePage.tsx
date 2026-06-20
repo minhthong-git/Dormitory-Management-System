@@ -10,6 +10,7 @@ const ProfilePage: React.FC = () => {
   // Profile Form State
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('OTHER');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Password Form State
@@ -26,6 +27,9 @@ const ProfilePage: React.FC = () => {
     if (user) {
       setFullName(user.fullName);
       setPhone(user.phone || '');
+      if (user.student?.gender) {
+        setGender(user.student.gender);
+      }
     }
   }, [user]);
 
@@ -45,7 +49,7 @@ const ProfilePage: React.FC = () => {
 
     setIsUpdating(true);
     try {
-      await authApi.updateProfile({ fullName, phone });
+      await authApi.updateProfile({ fullName, phone, gender });
       await fetchMe();
       setMessage({ text: 'Cập nhật thông tin cá nhân thành công', type: 'success' });
     } catch (err: any) {
@@ -183,6 +187,20 @@ const ProfilePage: React.FC = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Nhập số điện thoại"
                   />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="gender">Giới tính</label>
+                  <select
+                    id="gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="form-control"
+                  >
+                    <option value="OTHER">Chưa xác định</option>
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                  </select>
                 </div>
 
                 <button

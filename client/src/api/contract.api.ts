@@ -27,6 +27,15 @@ export const contractApi = {
   create: (data: CreateContractPayload) =>
     axiosClient.post<ApiResponse<Contract>>('/contracts', data),
 
+  book: (data: { bedId: string; startDate?: string; endDate?: string }) =>
+    axiosClient.post<ApiResponse<Contract>>('/contracts/book', data),
+
+  approve: (id: string) =>
+    axiosClient.patch<ApiResponse<Contract>>(`/contracts/${id}/approve`),
+
+  reject: (id: string) =>
+    axiosClient.patch<ApiResponse<Contract>>(`/contracts/${id}/reject`),
+
   terminate: (id: string) =>
     axiosClient.patch<ApiResponse<Contract>>(`/contracts/${id}/terminate`),
 
