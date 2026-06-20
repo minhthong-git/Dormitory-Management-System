@@ -36,6 +36,7 @@ model User {
 
   contracts     Contract[]
   notifications Notification[]
+  student       Student?
 
   @@map("users")
 }
@@ -60,26 +61,92 @@ model Room {
   contracts       Contract[]
   utilityReadings UtilityReading[]
   invoices        Invoice[]
+  beds            Bed[]
 
   @@map("rooms")
 }
 
+model Student {
+  id               String    @id @default(uuid())
+  userId           String?   @unique
+  studentCode      String    @unique
+  fullName         String
+  /// Allowed values: MALE | FEMALE | OTHER
+  gender           String
+  dateOfBirth      DateTime?
+  email            String    @unique
+  phone            String?
+  faculty          String?
+  major            String?
+  course           String?
+  emergencyContact String?
+  emergencyPhone   String?
+  /// Allowed values: ACTIVE | INACTIVE
+  status           String    @default("ACTIVE")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  contracts Contract[]
+  transferHistories TransferHistory[]
+
+  @@map("students")
+}
+
+model Bed {
+  id        String @id @default(uuid())
+  roomId    String
+  bedNumber Int
+  bedType   String @default("SINGLE")
+  /// Allowed values: AVAILABLE | OCCUPIED | MAINTENANCE
+  status    String @default("AVAILABLE")
+
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contracts Contract[]
+  transferHistoriesOld TransferHistory[] @relation("TransferOldBed")
+  transferHistoriesNew TransferHistory[] @relation("TransferNewBed")
+
+  @@unique([roomId, bedNumber])
+  @@map("beds")
+}
+
 model Contract {
   id        String   @id @default(uuid())
-  userId    String
-  roomId    String
+  studentId String
+  bedId     String
   startDate DateTime
   endDate   DateTime
+  price     Float
+  deposit    Float    @default(0)
+  monthlyFee Float    @default(0)
   /// Allowed values: ACTIVE | EXPIRED | TERMINATED
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  room     Room      @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  invoices Invoice[]
+  student           Student          @relation(fields: [studentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bed               Bed              @relation(fields: [bedId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoices          Invoice[]
+  transferHistories TransferHistory[]
 
   @@map("contracts")
+}
+
+model TransferHistory {
+  id        String   @id @default(uuid())
+  contractId String
+  studentId String
+  oldBedId  String
+  newBedId  String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  oldBed   Bed      @relation("TransferOldBed", fields: [oldBedId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  newBed   Bed      @relation("TransferNewBed", fields: [newBedId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("transfer_histories")
 }
 
 model Invoice {

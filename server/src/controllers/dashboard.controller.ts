@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/config/db';
 import { sendSuccess } from '@/utils/response';
+import { AppError } from '@/middleware/errorHandler';
 
 // ── GET /api/dashboard/stats ──────────────────────────────────
 // Admin/Staff: trả về thống kê toàn hệ thống
@@ -56,31 +57,41 @@ export const getDashboardStats = async (
       }, 'Lấy thống kê tổng quan thành công');
     } else {
       // ── Student stats ──────────────────────────────────────
+      const student = await prisma.student.findUnique({ where: { userId } });
+      if (!student) {
+        throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+      }
+
       const [activeContract, pendingInvoices, overdueInvoices] = await Promise.all([
         prisma.contract.findFirst({
-          where: { userId, status: 'ACTIVE' },
+          where: { studentId: student.id, status: 'ACTIVE' },
           include: {
-            room: { select: { roomNumber: true, type: true, floor: true, pricePerMonth: true } },
+            bed: {
+              include: {
+                room: {
+                  select: {
+                    roomNumber: true,
+                    type: true,
+                    floor: true,
+                    pricePerMonth: true,
+                  },
+                },
+              },
+            },
           },
         }),
         prisma.invoice.count({
-          where: {
-            paymentStatus: 'UNPAID',
-            contract: { userId },
-          },
+          where: { paymentStatus: 'UNPAID', contract: { studentId: student.id } },
         }),
         prisma.invoice.count({
-          where: {
-            paymentStatus: 'OVERDUE',
-            contract: { userId },
-          },
+          where: { paymentStatus: 'OVERDUE', contract: { studentId: student.id } },
         }),
       ]);
 
       sendSuccess(res, {
         role: 'STUDENT',
         activeContract,
-        myRoom: activeContract?.room ?? null,
+        myRoom: activeContract?.bed?.room ?? null,
         contractStatus: activeContract?.status ?? null,
         pendingInvoices,
         overdueInvoices,

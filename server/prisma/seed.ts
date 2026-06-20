@@ -4,18 +4,15 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Start seeding database...');
+  console.log('🌱 Start seeding...');
 
   // Clean existing data
   console.log('🧹 Cleaning old data...');
-  await prisma.notification.deleteMany({});
   await prisma.invoice.deleteMany({});
-  await prisma.utilityReading.deleteMany({});
   await prisma.transferHistory.deleteMany({});
   await prisma.contract.deleteMany({});
   await prisma.bed.deleteMany({});
   await prisma.room.deleteMany({});
-  await prisma.building.deleteMany({});
   await prisma.student.deleteMany({});
   await prisma.user.deleteMany({});
 
@@ -48,17 +45,7 @@ async function main() {
   });
   console.log(`✅ Created Staff: ${staff.email}`);
 
-  // 2. Tạo tòa nhà mẫu
-  let buildingA = await prisma.building.create({
-    data: {
-      name: 'Tòa A',
-      genderType: 'MIXED',
-      description: 'Tòa nhà dành cho cả nam và nữ.',
-    },
-  });
-  console.log(`✅ Đã tạo tòa nhà: ${buildingA.name}`);
-
-  // 3. Create 10 Rooms
+  // 2. Create 10 Rooms (AVAILABLE)
   console.log('🚪 Creating rooms...');
   const rooms = [];
   for (let i = 1; i <= 10; i++) {
@@ -74,14 +61,13 @@ async function main() {
         status: 'AVAILABLE',
         pricePerMonth: 1200000,
         description: `Phòng Quad 4 giường tầng ${floor}, trang bị máy lạnh, tủ lạnh mini.`,
-        buildingId: buildingA.id,
       },
     });
     rooms.push(room);
   }
   console.log(`✅ Created ${rooms.length} rooms.`);
 
-  // 4. Create 40 Beds (4 per Room)
+  // 3. Create 40 Beds (AVAILABLE, 4 per Room)
   console.log('🛏️ Creating beds...');
   const beds = [];
   for (const room of rooms) {
@@ -99,7 +85,7 @@ async function main() {
   }
   console.log(`✅ Created ${beds.length} beds.`);
 
-  // 5. Create 20 Student Users and Student profiles
+  // 4. Create 20 Student Users and Student profiles
   console.log('👥 Creating student accounts & profiles...');
   const students = [];
   const names = [
@@ -148,70 +134,7 @@ async function main() {
   }
   console.log(`✅ Created ${students.length} student users and profiles.`);
 
-  // 6. Create 15 Contracts
-  console.log('📋 Creating contracts...');
-  // 10 ACTIVE, 3 EXPIRED, 2 PENDING
-  const contractStatusList = [
-    ...Array(10).fill('ACTIVE'),
-    ...Array(3).fill('EXPIRED'),
-    ...Array(2).fill('PENDING'),
-  ];
-
-  for (let i = 0; i < 15; i++) {
-    const student = students[i];
-    const bed = beds[i];
-    const status = contractStatusList[i];
-
-    const startDate = new Date();
-    if (status === 'EXPIRED') {
-      startDate.setMonth(startDate.getMonth() - 7);
-    } else if (status === 'PENDING') {
-      startDate.setDate(startDate.getDate() + 5);
-    } else {
-      startDate.setMonth(startDate.getMonth() - 1);
-    }
-
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 6);
-
-    await prisma.contract.create({
-      data: {
-        studentId: student.id,
-        bedId: bed.id,
-        startDate,
-        endDate,
-        price: 1200000,
-        deposit: 1200000,
-        monthlyFee: 1200000,
-        status,
-      },
-    });
-
-    // If ACTIVE, update bed to OCCUPIED and increment room occupancy
-    if (status === 'ACTIVE') {
-      await prisma.bed.update({
-        where: { id: bed.id },
-        data: { status: 'OCCUPIED' },
-      });
-
-      const updatedRoom = await prisma.room.update({
-        where: { id: bed.roomId },
-        data: {
-          currentOccupancy: { increment: 1 },
-        },
-      });
-
-      // Update room status if full
-      if (updatedRoom.currentOccupancy >= updatedRoom.capacity) {
-        await prisma.room.update({
-          where: { id: bed.roomId },
-          data: { status: 'FULL' },
-        });
-      }
-    }
-  }
-
-  console.log('🌱 Seeding database completed successfully!');
+  console.log('🌱 Seeding hoàn tất!');
 }
 
 main()

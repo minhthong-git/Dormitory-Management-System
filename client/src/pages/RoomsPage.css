@@ -1,0 +1,179 @@
+.my-room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card {
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border);
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.75rem;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.info-label {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.info-value {
+  font-weight: 500;
+  color: var(--color-text);
+  text-align: right;
+}
+
+.room-number {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.my-bed-highlight {
+  background-color: rgba(91, 95, 239, 0.1);
+  color: var(--color-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  border: 1px solid rgba(91, 95, 239, 0.2);
+}
+
+.font-weight-bold {
+  font-weight: 700;
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+/* ── Roommates / Room Layout ── */
+.room-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.bed-box {
+  border-radius: 8px;
+  padding: 1rem;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bed-box__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding-bottom: 0.5rem;
+}
+
+[data-theme="dark"] .bed-box__header {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.bed-box__number {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.bed-box__status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.bed-box__content {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.bed-box__student {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.bed-box__student-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.bed-box__student-code {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.bed-box__empty-text {
+  font-style: italic;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* Bed Status Themes */
+.bed-box--available {
+  background-color: var(--color-surface);
+  border-color: var(--color-success);
+}
+.bed-box--available .bed-box__number { color: var(--color-success); }
+.bed-box--available .bed-box__status { background-color: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+
+.bed-box--occupied {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+.bed-box--occupied .bed-box__number { color: var(--color-text); }
+.bed-box--occupied .bed-box__status { background-color: rgba(0, 0, 0, 0.05); color: var(--color-text-muted); }
+[data-theme="dark"] .bed-box--occupied .bed-box__status { background-color: rgba(255, 255, 255, 0.1); }
+
+.bed-box--mine {
+  background-color: rgba(91, 95, 239, 0.05);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+.bed-box--mine .bed-box__number { color: var(--color-primary); }
+.bed-box--mine .bed-box__status { background-color: var(--color-primary); color: white; }
+
+.bed-box--maintenance {
+  background-color: var(--color-surface);
+  border-color: var(--color-warning);
+  opacity: 0.7;
+}
+.bed-box--maintenance .bed-box__number { color: var(--color-warning); }
+.bed-box--maintenance .bed-box__status { background-color: rgba(245, 158, 11, 0.1); color: var(--color-warning); }

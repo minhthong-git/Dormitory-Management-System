@@ -2,10 +2,19 @@ import axiosClient from './axiosClient';
 import type { ApiResponse, PaginatedResponse, Contract } from '@/types';
 
 export interface CreateContractPayload {
-  userId: string;
-  roomId: string;
+  studentId: string;
+  bedId: string;
   startDate: string;
   endDate: string;
+  price?: number;
+  deposit?: number;
+  monthlyFee?: number;
+}
+
+export interface TransferBedPayload {
+  studentId: string;
+  newBedId: string;
+  reason?: string;
 }
 
 export const contractApi = {
@@ -20,4 +29,23 @@ export const contractApi = {
 
   terminate: (id: string) =>
     axiosClient.patch<ApiResponse<Contract>>(`/contracts/${id}/terminate`),
+
+  checkIn: (data: { studentId: string; bedId: string }) =>
+    axiosClient.post<ApiResponse<Contract>>('/contracts/check-in', data),
+
+  checkOut: (data: { contractId: string }) =>
+    axiosClient.post<ApiResponse<Contract>>('/contracts/check-out', data),
+
+  transfer: (data: TransferBedPayload) =>
+    axiosClient.post<ApiResponse<Contract>>('/contracts/transfer', data),
+
+  update: (id: string, payload: Partial<CreateContractPayload>) =>
+    axiosClient.put<ApiResponse<Contract>>(`/contracts/${id}`, payload),
+
+  extend: (id: string, endDate: string) =>
+    axiosClient.patch<ApiResponse<Contract>>(`/contracts/${id}/extend`, { endDate }),
+
+  delete: (id: string) =>
+    axiosClient.delete<ApiResponse<null>>(`/contracts/${id}`),
 };
+export default contractApi;

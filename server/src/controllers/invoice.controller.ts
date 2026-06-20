@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import { prisma } from '@/config/db';
 import { InvoiceService } from '@/services/invoice.service';
 import { BillingService } from '@/services/billing.service';
 import { sendSuccess, sendPaginated } from '@/utils/response';
@@ -24,19 +25,63 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
     const billingYear = req.query.billingYear ? parseInt(req.query.billingYear as string, 10) : undefined;
     const search = req.query.search as string;
 
-    // STUDENT only views their own invoices
-    const userId = req.user?.role === 'STUDENT' ? req.user.sub : undefined;
+    const where: any = {};
+    if (status) where.paymentStatus = status;
+    if (roomId) where.roomId = roomId;
+    if (billingMonth) where.billingMonth = billingMonth;
+    if (billingYear) where.billingYear = billingYear;
 
-    const { items, total } = await invoiceService.getInvoices({
-      status,
-      roomId,
-      billingMonth,
-      billingYear,
-      search,
-      skip,
-      take: limit,
-      userId,
-    });
+    if (req.user?.role === 'STUDENT') {
+      let student = await prisma.student.findUnique({ where: { userId: req.user.sub }, select: { id: true } });
+      if (!student) {
+        const user = await prisma.user.findUnique({ where: { id: req.user.sub } });
+        if (user) {
+          student = await prisma.student.create({
+            data: {
+              userId: user.id,
+              studentCode: user.studentId || `SV_${user.id.substring(0, 8)}`,
+              fullName: user.fullName,
+              email: user.email,
+              phone: user.phone,
+              gender: 'OTHER',
+              status: 'ACTIVE',
+            },
+            select: { id: true },
+          });
+        } else {
+          throw new AppError('Không tìm thấy hồ sơ sinh viên', 404);
+        }
+      }
+      const studentContracts = await prisma.contract.findMany({ where: { studentId: student.id }, select: { id: true } });
+      where.contractId = { in: studentContracts.map((c) => c.id) };
+    }
+
+    if (search) {
+      where.OR = [
+        { room: { roomNumber: { contains: search } } },
+        { contract: { student: { fullName: { contains: search } } } },
+        { contract: { student: { studentCode: { contains: search } } } },
+      ];
+    }
+
+    const [items, total] = await prisma.$transaction([
+      prisma.invoice.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { dueDate: 'desc' },
+        include: {
+          room: { select: { roomNumber: true } },
+          contract: {
+            include: {
+              student: { select: { id: true, studentCode: true, fullName: true } },
+              bed: { select: { bedNumber: true, room: { select: { roomNumber: true } } } },
+            },
+          },
+        },
+      }),
+      prisma.invoice.count({ where }),
+    ]);
 
     sendPaginated(res, items, total, page, limit, 'Lấy danh sách hóa đơn thành công');
   } catch (err) {

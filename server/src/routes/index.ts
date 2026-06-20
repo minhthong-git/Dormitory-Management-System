@@ -8,6 +8,8 @@ import dashboardRoutes from './dashboard.routes';
 import buildingRoutes from './building.routes';
 import utilityRoutes from './utility.routes';
 import notificationRoutes from './notification.routes';
+import studentRoutes from './student.routes';
+import bedRoutes from './bed.routes';
 
 const router = Router();
 
@@ -15,9 +17,11 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/buildings', buildingRoutes);
 router.use('/rooms', roomRoutes);
+router.use('/beds', bedRoutes);
 router.use('/contracts', contractRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/users', userRoutes);
+router.use('/students', studentRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/utilities', utilityRoutes);
 router.use('/notifications', notificationRoutes);

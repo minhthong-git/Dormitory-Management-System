@@ -1,14 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import '../BuildingList.css'; 
+import React, { useState, useEffect, useCallback } from 'react';
+import { roomApi } from '@/api/room.api';
+import { bedApi } from '@/api/bed.api';
+import type { Room, Bed } from '@/types';
+import './AdminRoomsPage.css';
+import '../BuildingList.css';
 
-export default function AdminRoomsPage() {
-  const [rooms, setRooms] = useState<any[]>([]);
-  const [buildings, setBuildings] = useState<any[]>([]);
-  
-  // State quản lý Modal
+const AdminRoomsPage: React.FC = () => {
+  // State for data
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [beds, setBeds] = useState<Bed[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters State
+  const [searchRoomNumber, setSearchRoomNumber] = useState('');
+  const [filterFloor, setFilterFloor] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  // Modal & Edit State (from HEAD)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null); // null: Thêm mới, String: Đang sửa
-  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [buildings, setBuildings] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     roomNumber: '',
     buildingId: '',
@@ -19,30 +31,24 @@ export default function AdminRoomsPage() {
     description: '',
     status: 'AVAILABLE'
   });
-
   const token = localStorage.getItem('accessToken');
 
-  // Lấy danh sách phòng
-  const fetchAllRooms = async () => {
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/rooms', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      
-      let roomData = [];
-      if (result.data && Array.isArray(result.data.data)) roomData = result.data.data;
-      else if (Array.isArray(result.data)) roomData = result.data;
-      else if (result.data?.items) roomData = result.data.items;
-      else if (Array.isArray(result)) roomData = result;
-
-      setRooms(roomData);
-    } catch (error) {
-      console.error('Lỗi lấy dữ liệu phòng:', error);
+      const [roomsRes, bedsRes] = await Promise.all([
+        roomApi.getAll({ limit: 100 }),
+        bedApi.getAll({ limit: 100 }),
+      ]);
+      setRooms(roomsRes.data.data || []);
+      setBeds(bedsRes.data.data || []);
+    } catch (err) {
+      console.error('Lỗi tải dữ liệu phòng & giường:', err);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  // Lấy danh sách Tòa nhà
   const fetchBuildings = async () => {
     try {
       const response = await fetch('/api/buildings');
@@ -56,11 +62,10 @@ export default function AdminRoomsPage() {
   };
 
   useEffect(() => {
-    fetchAllRooms();
+    fetchData();
     fetchBuildings();
-  }, []);
+  }, [fetchData]);
 
-  // Mở modal thêm mới
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
@@ -76,7 +81,6 @@ export default function AdminRoomsPage() {
     setIsModalOpen(true);
   };
 
-  // Mở modal chỉnh sửa
   const handleOpenEdit = (room: any) => {
     setEditingId(room.id);
     setFormData({
@@ -92,7 +96,6 @@ export default function AdminRoomsPage() {
     setIsModalOpen(true);
   };
 
-  // Xử lý Xóa phòng
   const handleDeleteRoom = async (id: string, roomNumber: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa phòng ${roomNumber}?`)) return;
 
@@ -105,7 +108,7 @@ export default function AdminRoomsPage() {
       
       if (response.ok || result.success) {
         alert('Xóa phòng thành công!');
-        fetchAllRooms();
+        fetchData();
       } else {
         alert(result.message || 'Không thể xóa phòng này!');
       }
@@ -114,7 +117,6 @@ export default function AdminRoomsPage() {
     }
   };
 
-  // Xử lý Lưu (Thêm mới hoặc Cập nhật)
   const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.buildingId) {
@@ -144,7 +146,7 @@ export default function AdminRoomsPage() {
       if (response.ok || result.success) {
         alert(editingId ? 'Cập nhật thành công!' : 'Thêm phòng thành công!');
         setIsModalOpen(false);
-        fetchAllRooms();
+        fetchData();
       } else {
         alert(result.message);
       }
@@ -153,82 +155,200 @@ export default function AdminRoomsPage() {
     }
   };
 
-  return (
-    <div className="building-page">
-      <div className="building-header" style={{ alignItems: 'flex-start' }}>
-        <div>
-          <h1 className="building-title">Quản lý Toàn bộ Phòng</h1>
-          <p style={{ margin: 0, color: '#94a3b8' }}>Xem và quản lý tất cả các phòng trên toàn hệ thống Ký túc xá.</p>
-        </div>
-        <button className="btn-add" onClick={handleOpenAdd}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style={{ marginRight: '8px' }}>
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Thêm Phòng mới
-        </button>
-      </div>
+  const bedsByRoom: Record<string, Bed[]> = {};
+  beds.forEach((bed) => {
+    if (!bedsByRoom[bed.roomId]) {
+      bedsByRoom[bed.roomId] = [];
+    }
+    bedsByRoom[bed.roomId].push(bed);
+  });
 
-      {rooms.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', backgroundColor: '#1e293b', borderRadius: '12px' }}>
-          Hệ thống hiện tại chưa có phòng nào. Hãy thêm phòng mới để bắt đầu!
+  const filteredRooms = rooms.filter((room) => {
+    const matchesSearch = room.roomNumber.toLowerCase().includes(searchRoomNumber.toLowerCase().trim());
+    const matchesFloor = filterFloor === '' || room.floor.toString() === filterFloor;
+    const matchesType = filterType === '' || room.type === filterType;
+    const matchesStatus = filterStatus === '' || room.status === filterStatus;
+    return matchesSearch && matchesFloor && matchesType && matchesStatus;
+  });
+
+  const totalBeds = beds.length;
+  const occupiedBedsCount = beds.filter((b) => b.status === 'OCCUPIED').length;
+  const availableBedsCount = beds.filter((b) => b.status === 'AVAILABLE').length;
+  const maintenanceBedsCount = beds.filter((b) => b.status === 'MAINTENANCE').length;
+
+  const roomTypeLabel: Record<string, string> = {
+    SINGLE: 'Phòng đơn',
+    DOUBLE: 'Phòng đôi',
+    QUAD: 'Phòng 4 người',
+  };
+
+  return (
+    <div className="page">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1>Quản lý Sơ đồ phòng & Lấp đầy</h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: 4 }}>
+            Theo dõi chi tiết số phòng, giường và thêm mới phòng.
+          </p>
         </div>
-      ) : (
-        <div className="building-grid">
-          {rooms.map((room) => (
-            <div key={room.id} className="building-card">
-              <div className="card-header">
-                <h2 className="card-title">Phòng {room.roomNumber}</h2>
-                <span className={`badge ${room.status === 'AVAILABLE' ? 'badge-mixed' : 'badge-female'}`}>
-                  {room.status === 'AVAILABLE' ? 'Còn trống' : room.status === 'FULL' ? 'Đã đầy' : 'Bảo trì'}
-                </span>
-              </div>
-              <div className="card-info">
-                {/* THÊM DÒNG NÀY ĐỂ HIỂN THỊ TÊN TÒA NHÀ */}
-                <div className="info-row">
-                  <span>Tòa nhà:</span>
-                  <span className="info-value" style={{ fontWeight: 'bold', color: '#818cf8' }}>
-                    {buildings.find(b => b.id === room.buildingId)?.name || 'Không xác định'}
-                  </span>
-                </div>
-                
-                <div className="info-row">
-                  <span>Loại phòng:</span>
-                  <span className="info-value">{room.type || 'Chưa phân loại'}</span>
-                </div>
-                <div className="info-row">
-                  <span>Tầng:</span>
-                  <span className="info-value">{room.floor}</span>
-                </div>
-                <div className="info-row">
-                  <span>Sức chứa:</span>
-                  <span className="info-value">{room.currentOccupancy || 0} / {room.capacity} người</span>
-                </div>
-                <div className="info-row">
-                  <span>Giá/tháng:</span>
-                  <span className="info-value text-green">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(room.pricePerMonth || 0)}
-                  </span>
-                </div>
-              </div>
-              <div className="card-actions">
-                <button className="btn-action btn-edit" onClick={() => handleOpenEdit(room)}>Chỉnh sửa</button>
-                <button className="btn-action btn-delete" onClick={() => handleDeleteRoom(room.id, room.roomNumber)}>Xóa</button>
-              </div>
+        <div className="header-actions">
+          <button className="btn-add" onClick={handleOpenAdd} style={{ marginRight: '10px' }}>
+            + Thêm Phòng
+          </button>
+          <button className="btn btn-outline" onClick={fetchData} disabled={isLoading}>
+            Tải lại
+          </button>
+        </div>
+      </header>
+
+      <main className="page-main">
+        <div className="occupancy-summary">
+          <div className="summary-pill">Phòng: <strong>{rooms.length}</strong></div>
+          <div className="summary-pill">Giường: <strong>{totalBeds}</strong></div>
+          <div className="summary-pill summary-pill--green">Trống: <strong>{availableBedsCount}</strong></div>
+          <div className="summary-pill summary-pill--red">Có khách: <strong>{occupiedBedsCount}</strong></div>
+          <div className="summary-pill summary-pill--yellow">Bảo trì: <strong>{maintenanceBedsCount}</strong></div>
+          <div className="summary-pill">Lấp đầy: <strong>{totalBeds ? Math.round((occupiedBedsCount / totalBeds) * 100) : 0}%</strong></div>
+        </div>
+
+        <div className="student-controls">
+          <div className="student-filters">
+            <div className="form-group student-select-filter" style={{ minWidth: 200 }}>
+              <input type="text" placeholder="Tìm số phòng..." value={searchRoomNumber} onChange={(e) => setSearchRoomNumber(e.target.value)} />
             </div>
-          ))}
+            <div className="form-group student-select-filter">
+              <select value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)}>
+                <option value="">Tầng (Tất cả)</option>
+                <option value="1">Tầng 1</option>
+                <option value="2">Tầng 2</option>
+                <option value="3">Tầng 3</option>
+              </select>
+            </div>
+            <div className="form-group student-select-filter">
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                <option value="">Loại (Tất cả)</option>
+                <option value="SINGLE">Đơn</option>
+                <option value="DOUBLE">Đôi</option>
+                <option value="QUAD">4 người</option>
+              </select>
+            </div>
+            <div className="form-group student-select-filter">
+              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <option value="">Trạng thái (Tất cả)</option>
+                <option value="AVAILABLE">Còn giường trống</option>
+                <option value="FULL">Đầy phòng</option>
+                <option value="MAINTENANCE">Bảo trì</option>
+              </select>
+            </div>
+          </div>
+          {(searchRoomNumber || filterFloor || filterType || filterStatus) && (
+            <button className="btn btn-outline" onClick={() => { setSearchRoomNumber(''); setFilterFloor(''); setFilterType(''); setFilterStatus(''); }}>
+              Đặt lại lọc
+            </button>
+          )}
         </div>
-      )}
+
+        {isLoading ? (
+          <div className="loading-screen" style={{ minHeight: '35vh' }}><div className="spinner" /></div>
+        ) : filteredRooms.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state__icon">🚪</div>
+            <h3>Không tìm thấy phòng nào</h3>
+          </div>
+        ) : (
+          <div className="occupancy-grid">
+            {filteredRooms.map((room) => {
+              const roomBeds = bedsByRoom[room.id] || [];
+              const occupiedBeds = roomBeds.filter((b) => b.status === 'OCCUPIED');
+              const availableBeds = roomBeds.filter((b) => b.status === 'AVAILABLE');
+
+              return (
+                <div key={room.id} className="room-card">
+                  <div className="room-card__header">
+                    <div>
+                      <span className="room-card__number">Phòng {room.roomNumber}</span>
+                      <span className="room-card__meta" style={{ marginLeft: 8 }}>
+                        Tầng {room.floor} · {roomTypeLabel[room.type] || room.type}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button className="btn-action btn-edit" onClick={() => handleOpenEdit(room)} style={{ padding: '4px 8px', fontSize: '0.8rem' }}>Sửa</button>
+                      <button className="btn-action btn-delete" onClick={() => handleDeleteRoom(room.id, room.roomNumber)} style={{ padding: '4px 8px', fontSize: '0.8rem' }}>Xóa</button>
+                    </div>
+                  </div>
+
+                  <div className="room-card__occupancy">
+                    👥 Tỉ lệ: <strong>{occupiedBeds.length}</strong> / {room.capacity} giường
+                    {availableBeds.length > 0 && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-success)', marginLeft: 8 }}>
+                        (Trống {availableBeds.length})
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="room-card__beds-container">
+                    {roomBeds.length === 0 ? (
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '10px 0' }}>
+                        Chưa thiết lập giường.
+                      </div>
+                    ) : (
+                      roomBeds.map((bed) => {
+                        const activeContract = bed.contracts?.[0];
+                        const studentName = activeContract?.student?.fullName;
+                        const studentCode = activeContract?.student?.studentCode;
+
+                        let statusClass = 'bed-status-item--available';
+                        let indicatorClass = 'bed-status-indicator--available';
+                        let statusText = 'Trống';
+
+                        if (bed.status === 'OCCUPIED') {
+                          statusClass = 'bed-status-item--occupied';
+                          indicatorClass = 'bed-status-indicator--occupied';
+                          statusText = 'Có khách';
+                        } else if (bed.status === 'MAINTENANCE') {
+                          statusClass = 'bed-status-item--maintenance';
+                          indicatorClass = 'bed-status-indicator--maintenance';
+                          statusText = 'Bảo trì';
+                        }
+
+                        return (
+                          <div key={bed.id} className={`bed-status-item ${statusClass}`}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <span className={`bed-status-indicator ${indicatorClass}`} />
+                              <strong>Giường #{bed.bedNumber}</strong>
+                              <span style={{ fontSize: '0.75rem', opacity: 0.75, marginLeft: 6 }}>({bed.bedType})</span>
+                            </div>
+                            <div>
+                              {bed.status === 'OCCUPIED' && studentName ? (
+                                <div className="bed-student-info">
+                                  <span className="bed-student-name">{studentName}</span>
+                                  <span className="bed-student-code">{studentCode}</span>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>{statusText}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
 
       {/* MODAL THÊM / SỬA PHÒNG */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h2>{editingId ? 'Cập nhật thông tin Phòng' : 'Thêm Phòng Mới'}</h2>
+              <h2>{editingId ? 'Cập nhật phòng' : 'Thêm Phòng Mới'}</h2>
               <button className="btn-close" onClick={() => setIsModalOpen(false)}>&times;</button>
             </div>
             <form onSubmit={handleSaveRoom}>
-              
               <div className="form-group">
                 <label>Chọn Tòa Nhà</label>
                 <select 
@@ -236,7 +356,7 @@ export default function AdminRoomsPage() {
                   value={formData.buildingId}
                   onChange={(e) => setFormData({...formData, buildingId: e.target.value})}
                   required
-                  disabled={editingId !== null} // Khóa không cho đổi tòa nhà khi đang sửa để tránh lỗi dữ liệu chéo
+                  disabled={editingId !== null}
                 >
                   <option value="" disabled>-- Chọn tòa nhà --</option>
                   {buildings.map(b => (
@@ -248,36 +368,18 @@ export default function AdminRoomsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Số phòng</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.roomNumber}
-                    onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
-                    required 
-                    disabled={editingId !== null} // Thường không nên sửa số phòng khi phòng đã vận hành
-                  />
+                  <input type="text" className="form-input" value={formData.roomNumber} onChange={(e) => setFormData({...formData, roomNumber: e.target.value})} required disabled={editingId !== null} />
                 </div>
                 <div className="form-group">
                   <label>Tầng</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    min="1"
-                    value={formData.floor}
-                    onChange={(e) => setFormData({...formData, floor: Number(e.target.value)})}
-                    required 
-                  />
+                  <input type="number" className="form-input" min="1" value={formData.floor} onChange={(e) => setFormData({...formData, floor: Number(e.target.value)})} required />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Loại phòng</label>
-                  <select 
-                    className="form-select"
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                  >
+                  <select className="form-select" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
                     <option value="SINGLE">Phòng Đơn</option>
                     <option value="DOUBLE">Phòng Đôi</option>
                     <option value="QUAD">Phòng 4 người</option>
@@ -285,37 +387,19 @@ export default function AdminRoomsPage() {
                 </div>
                 <div className="form-group">
                   <label>Sức chứa tối đa</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    min="1"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})}
-                    required 
-                  />
+                  <input type="number" className="form-input" min="1" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})} required />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label>Giá phòng/Tháng (VNĐ)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    min="0" step="1000"
-                    value={formData.pricePerMonth}
-                    onChange={(e) => setFormData({...formData, pricePerMonth: Number(e.target.value)})}
-                    required 
-                  />
+                  <input type="number" className="form-input" min="0" step="1000" value={formData.pricePerMonth} onChange={(e) => setFormData({...formData, pricePerMonth: Number(e.target.value)})} required />
                 </div>
                 {editingId && (
                   <div className="form-group">
                     <label>Trạng thái</label>
-                    <select 
-                      className="form-select"
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    >
+                    <select className="form-select" value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
                       <option value="AVAILABLE">Còn trống</option>
                       <option value="FULL">Đã đầy</option>
                       <option value="MAINTENANCE">Đang bảo trì</option>
@@ -326,7 +410,7 @@ export default function AdminRoomsPage() {
 
               <div className="modal-actions">
                 <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Hủy</button>
-                <button type="submit" className="btn-add">Lưu thông tin</button>
+                <button type="submit" className="btn-add">Lưu</button>
               </div>
             </form>
           </div>
@@ -335,3 +419,5 @@ export default function AdminRoomsPage() {
     </div>
   );
 }
+
+export default AdminRoomsPage;
