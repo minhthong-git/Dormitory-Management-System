@@ -1,6 +1,21 @@
 import { prisma } from '@/config/db';
 import type { CreateInvoiceDto, UpdateInvoiceDto, PaymentStatus } from '@/types';
 
+// Helper function to map student user details to contract user details for backward compatibility
+function mapContractUser<T extends { contract?: any }>(invoice: T): T {
+  if (invoice?.contract?.student) {
+    const student = invoice.contract.student;
+    invoice.contract.userId = student.userId;
+    invoice.contract.user = student.user || {
+      fullName: student.fullName,
+      studentId: student.studentCode,
+      phone: student.phone,
+      email: student.email,
+    };
+  }
+  return invoice;
+}
+
 export class InvoiceRepository {
   async checkAndUpdateOverdueInvoices() {
     const now = new Date();
@@ -16,7 +31,7 @@ export class InvoiceRepository {
   }
 
   async createInvoice(data: CreateInvoiceDto) {
-    return prisma.invoice.create({
+    const invoice = await prisma.invoice.create({
       data: {
         roomId: data.roomId,
         contractId: data.contractId || null,
@@ -34,12 +49,17 @@ export class InvoiceRepository {
       include: {
         room: { select: { roomNumber: true } },
         contract: {
-          select: {
-            user: { select: { fullName: true, studentId: true } }
+          include: {
+            student: {
+              include: {
+                user: { select: { fullName: true, studentId: true } }
+              }
+            }
           }
         }
       }
     });
+    return mapContractUser(invoice);
   }
 
   async updateInvoice(id: string, data: UpdateInvoiceDto) {
@@ -57,18 +77,23 @@ export class InvoiceRepository {
     if (data.dueDate !== undefined) updateData.dueDate = new Date(data.dueDate);
     if (data.paidDate !== undefined) updateData.paidDate = data.paidDate ? new Date(data.paidDate) : null;
 
-    return prisma.invoice.update({
+    const invoice = await prisma.invoice.update({
       where: { id },
       data: updateData,
       include: {
         room: { select: { roomNumber: true } },
         contract: {
-          select: {
-            user: { select: { fullName: true, studentId: true } }
+          include: {
+            student: {
+              include: {
+                user: { select: { fullName: true, studentId: true } }
+              }
+            }
           }
         }
       }
     });
+    return mapContractUser(invoice);
   }
 
   async deleteInvoice(id: string) {
@@ -79,18 +104,31 @@ export class InvoiceRepository {
 
   async findById(id: string) {
     await this.checkAndUpdateOverdueInvoices();
-    return prisma.invoice.findUnique({
+    const invoice = await prisma.invoice.findUnique({
       where: { id },
       include: {
         room: { select: { roomNumber: true } },
         contract: {
           include: {
-            user: { select: { id: true, fullName: true, studentId: true, phone: true, email: true } },
-            room: { select: { roomNumber: true, pricePerMonth: true, floor: true, type: true } }
+            student: {
+              include: {
+                user: { select: { id: true, fullName: true, studentId: true, phone: true, email: true } }
+              }
+            },
+            bed: {
+              include: {
+                room: { select: { roomNumber: true, pricePerMonth: true, floor: true, type: true } }
+              }
+            }
           }
         }
       }
     });
+
+    if (invoice && invoice.contract) {
+      (invoice.contract as any).room = invoice.contract.bed?.room;
+    }
+    return mapContractUser(invoice);
   }
 
   async findAll(filters: {
@@ -111,14 +149,14 @@ export class InvoiceRepository {
     if (filters.billingYear) where.billingYear = filters.billingYear;
 
     if (filters.userId) {
-      where.contract = { userId: filters.userId };
+      where.contract = { student: { userId: filters.userId } };
     }
 
     if (filters.search) {
       where.OR = [
         { room: { roomNumber: { contains: filters.search } } },
-        { contract: { user: { fullName: { contains: filters.search } } } },
-        { contract: { user: { studentId: { contains: filters.search } } } }
+        { contract: { student: { fullName: { contains: filters.search } } } },
+        { contract: { student: { studentCode: { contains: filters.search } } } }
       ];
     }
 
@@ -132,8 +170,16 @@ export class InvoiceRepository {
           room: { select: { roomNumber: true } },
           contract: {
             include: {
-              user: { select: { id: true, fullName: true, studentId: true } },
-              room: { select: { roomNumber: true } }
+              student: {
+                include: {
+                  user: { select: { id: true, fullName: true, studentId: true } }
+                }
+              },
+              bed: {
+                include: {
+                  room: { select: { roomNumber: true } }
+                }
+              }
             }
           }
         }
@@ -141,7 +187,14 @@ export class InvoiceRepository {
       prisma.invoice.count({ where }),
     ]);
 
-    return { items, total };
+    const mappedItems = items.map((item) => {
+      if (item.contract) {
+        (item.contract as any).room = item.contract.bed?.room;
+      }
+      return mapContractUser(item);
+    });
+
+    return { items: mappedItems, total };
   }
 
   async findByMonth(month: number, year: number) {

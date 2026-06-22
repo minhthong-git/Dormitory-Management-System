@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/context/NotificationContext';
+import { useAuth } from '@/context/AuthContext';
 import './NotificationsPage.css';
 
 // Type helper for relative timestamps
@@ -75,6 +76,7 @@ const NotificationsPage: React.FC = () => {
     currentPage
   } = useNotifications();
 
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'READ'>('ALL');
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
@@ -88,11 +90,15 @@ const NotificationsPage: React.FC = () => {
       await markAsRead(notif.id);
     }
     
+    const isAdminOrStaff = user?.role === 'ADMIN' || user?.role === 'STAFF';
+
     // Router navigation based on referenceType/referenceId
     if (notif.referenceId && notif.referenceType === 'INVOICE') {
       navigate(`/invoices/${notif.referenceId}`);
     } else if (notif.referenceType === 'CONTRACT') {
       navigate('/rooms');
+    } else if (notif.referenceType === 'SYSTEM') {
+      navigate(isAdminOrStaff ? '/admin/maintenance' : '/report');
     }
   };
 

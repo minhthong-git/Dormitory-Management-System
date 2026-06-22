@@ -37,6 +37,7 @@ model User {
 
   notifications Notification[]
   student       Student?
+  assignedMaintenances MaintenanceRequest[] @relation("StaffMaintenance")
 
   @@map("users")
 }
@@ -64,6 +65,8 @@ model Room {
   utilityReadings UtilityReading[]
   invoices        Invoice[]
   beds            Bed[]
+  assets          Asset[]
+  maintenanceRequests MaintenanceRequest[]
 
   @@map("rooms")
 }
@@ -91,6 +94,7 @@ model Student {
   user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   contracts Contract[]
   transferHistories TransferHistory[]
+  maintenanceRequests MaintenanceRequest[]
 
   @@map("students")
 }
@@ -236,5 +240,45 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+model Asset {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  type        String
+  status      String   @default("GOOD")
+  description String?
+  roomId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  maintenanceRequests MaintenanceRequest[]
+
+  @@map("assets")
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(uuid())
+  roomId      String
+  assetId     String?
+  studentId   String
+  title       String
+  description String
+  status      String   @default("PENDING")
+  priority    String   @default("MEDIUM")
+  staffId     String?
+  notes       String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  asset       Asset?   @relation(fields: [assetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  staff       User?    @relation("StaffMaintenance", fields: [staffId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("maintenance_requests")
 }
 

@@ -2,13 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { contractApi } from '@/api/contract.api';
 import { bedApi } from '@/api/bed.api';
 import { roomApi } from '@/api/room.api';
-import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import type { Contract, Bed, Room } from '@/types';
 import './RoomsPage.css';
 
 const RoomsPage: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   
   const [contract, setContract] = useState<Contract | null>(null);

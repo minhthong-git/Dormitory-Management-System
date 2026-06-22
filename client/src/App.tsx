@@ -29,6 +29,9 @@ const AdminContractsPage = lazy(() => import('@/pages/admin/AdminContractsPage')
 const StudentManagementPage = lazy(() => import('@/pages/admin/StudentManagementPage'));
 const StudentFormPage       = lazy(() => import('@/pages/admin/StudentFormPage'));
 const StudentDetailPage     = lazy(() => import('@/pages/admin/StudentDetailPage'));
+const AdminAssetsPage      = lazy(() => import('@/pages/admin/AdminAssetsPage'));
+const AdminMaintenancePage = lazy(() => import('@/pages/admin/AdminMaintenancePage'));
+const MaintenanceRequestPage = lazy(() => import('@/pages/MaintenanceRequestPage'));
 const UnauthorizedPage   = lazy(() => import('@/pages/UnauthorizedPage'));
 const NotFoundPage       = lazy(() => import('@/pages/NotFoundPage'));
 
@@ -62,6 +65,7 @@ function App() {
                   <Route path="/invoices"     element={<StudentInvoicesPage />} />
                   <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
+                  <Route path="/report"    element={<MaintenanceRequestPage />} />
                 </Route>
               </Route>
 
@@ -75,6 +79,8 @@ function App() {
                   <Route path="/admin/notifications" element={<NotificationsPage />} />
                   <Route path="/admin/beds"   element={<AdminBedsPage />} />
                   <Route path="/admin/contracts" element={<AdminContractsPage />} />
+                  <Route path="/admin/assets" element={<AdminAssetsPage />} />
+                  <Route path="/admin/maintenance" element={<AdminMaintenancePage />} />
                 </Route>
               </Route>
 
