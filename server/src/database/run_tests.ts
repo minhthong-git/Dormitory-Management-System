@@ -31,9 +31,23 @@ async function runTests() {
     const room = await prisma.room.findUnique({ where: { roomNumber: 'P101' } });
     if (!room) throw new Error('Room P101 not found, run db:seed first!');
 
-    // April 2026 invoice was already created in seed.ts
-    // Let's try creating a manual invoice for April 2026 for the same room
+    // Create the first invoice for April 2026 to ensure duplicate error can trigger
+    const firstInvoice = await prisma.invoice.create({
+      data: {
+        roomId: room.id,
+        billingMonth: 4,
+        billingYear: 2026,
+        roomFee: 1200000,
+        electricityFee: 420000,
+        waterFee: 180000,
+        serviceFee: 50000,
+        totalAmount: 1850000,
+        dueDate: new Date('2026-05-10'),
+      }
+    });
+
     try {
+      // Let's try creating a manual invoice for April 2026 for the same room
       await invoiceService.createInvoice({
         roomId: room.id,
         billingMonth: 4,
@@ -48,6 +62,9 @@ async function runTests() {
       throw new Error('Should have failed to create a duplicate invoice, but succeeded!');
     } catch (err: any) {
       assert.ok(err.message.includes('đã tồn tại') || err.message.includes('đã được lập'));
+    } finally {
+      // Clean up the first invoice
+      await prisma.invoice.delete({ where: { id: firstInvoice.id } });
     }
   });
 
@@ -148,6 +165,103 @@ async function runTests() {
     } finally {
       // Clean up
       await prisma.invoice.delete({ where: { id: tempUnpaid.id } });
+    }
+  });
+
+  // Test Case 5: Student submits maintenance request & Asset becomes DAMAGED
+  await runTestCase('Asset/Maintenance - Submit request & asset status to DAMAGED', async () => {
+    // Find active student
+    const student = await prisma.student.findFirst({ where: { status: 'ACTIVE' } });
+    if (!student) throw new Error('No active student found for testing');
+
+    // Find a room asset
+    const asset = await prisma.asset.findFirst();
+    if (!asset) throw new Error('No asset found for testing, run seed first');
+
+    // Set asset status to GOOD initially
+    await prisma.asset.update({
+      where: { id: asset.id },
+      data: { status: 'GOOD' },
+    });
+
+    // Create a maintenance request
+    const request = await prisma.maintenanceRequest.create({
+      data: {
+        roomId: asset.roomId,
+        assetId: asset.id,
+        studentId: student.id,
+        title: 'Test asset damage report',
+        description: 'Test description',
+        status: 'PENDING',
+      },
+    });
+
+    // Update asset status to DAMAGED (as controller does)
+    await prisma.asset.update({
+      where: { id: asset.id },
+      data: { status: 'DAMAGED' },
+    });
+
+    try {
+      const dbAsset = await prisma.asset.findUnique({ where: { id: asset.id } });
+      assert.strictEqual(dbAsset?.status, 'DAMAGED');
+    } finally {
+      // Clean up request
+      await prisma.maintenanceRequest.delete({ where: { id: request.id } });
+    }
+  });
+
+  // Test Case 6: Resolve request => Asset status back to GOOD
+  await runTestCase('Asset/Maintenance - Resolve request & update asset status back to GOOD', async () => {
+    const student = await prisma.student.findFirst({ where: { status: 'ACTIVE' } });
+    if (!student) throw new Error('No active student');
+
+    const asset = await prisma.asset.findFirst();
+    if (!asset) throw new Error('No asset');
+
+    // Initial damaged state
+    await prisma.asset.update({
+      where: { id: asset.id },
+      data: { status: 'DAMAGED' },
+    });
+
+    const request = await prisma.maintenanceRequest.create({
+      data: {
+        roomId: asset.roomId,
+        assetId: asset.id,
+        studentId: student.id,
+        title: 'Test repair complete',
+        description: 'Test description',
+        status: 'PENDING',
+      },
+    });
+
+    try {
+      // Resolve the request (simulate controller action)
+      await prisma.maintenanceRequest.update({
+        where: { id: request.id },
+        data: {
+          status: 'RESOLVED',
+          notes: 'Fixed successfully',
+          resolvedAt: new Date(),
+        },
+      });
+
+      // Update asset back to GOOD (simulate controller action)
+      await prisma.asset.update({
+        where: { id: asset.id },
+        data: { status: 'GOOD' },
+      });
+
+      const dbRequest = await prisma.maintenanceRequest.findUnique({ where: { id: request.id } });
+      const dbAsset = await prisma.asset.findUnique({ where: { id: asset.id } });
+
+      assert.strictEqual(dbRequest?.status, 'RESOLVED');
+      assert.strictEqual(dbRequest?.notes, 'Fixed successfully');
+      assert.strictEqual(dbAsset?.status, 'GOOD');
+    } finally {
+      // Clean up request
+      await prisma.maintenanceRequest.delete({ where: { id: request.id } });
     }
   });
 

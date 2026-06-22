@@ -1,0 +1,178 @@
+/* ── MaintenanceRequestPage (Student) Styling ── */
+.student-maint {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.student-maint__header {
+  margin-bottom: 2rem;
+}
+
+.student-maint__title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-text, #f1f5f9);
+  margin: 0 0 0.25rem 0;
+}
+
+.student-maint__subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #64748b);
+  margin: 0;
+}
+
+/* Split Pane Layout */
+.student-maint__content {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* Form Card */
+.student-maint__form-card {
+  background: var(--color-surface, #1F2937);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.07));
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.4));
+}
+
+.student-maint__form-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text, #f1f5f9);
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.07));
+}
+
+/* History Column */
+.student-maint__history {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-maint__history-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text, #f1f5f9);
+  margin: 0 0 0.5rem 0;
+}
+
+/* History Ticket Card */
+.student-ticket {
+  background: var(--color-surface, #1F2937);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.07));
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.3));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  transition: border-color var(--transition, 150ms ease), transform var(--transition, 150ms ease);
+}
+
+.student-ticket:hover {
+  border-color: var(--color-primary, #5B5FEF);
+  transform: translateY(-2px);
+}
+
+.student-ticket__main {
+  flex: 1;
+}
+
+.student-ticket__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.student-ticket__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text, #f1f5f9);
+  margin: 0;
+}
+
+.student-ticket__desc {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #64748b);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+}
+
+.student-ticket__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  border-top: 1px dashed var(--color-border, rgba(255, 255, 255, 0.07));
+  padding-top: 0.625rem;
+}
+
+.student-ticket__meta span strong {
+  color: var(--color-text, #f1f5f9);
+}
+
+.student-ticket__tech-log {
+  background-color: var(--color-surface-2, #2d3a4d);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  border-left: 3px solid var(--color-success, #10b981);
+}
+
+.student-ticket__tech-notes {
+  margin: 0.25rem 0 0 0;
+  color: var(--color-text, #f1f5f9);
+  font-style: italic;
+}
+
+/* Status Badge mapping */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge--pending { background-color: rgba(239, 68, 68, 0.15); color: var(--color-danger, #ef4444); }
+.status-badge--assigned { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.status-badge--in_progress { background-color: rgba(245, 158, 11, 0.15); color: var(--color-warning, #f59e0b); }
+.status-badge--resolved { background-color: rgba(16, 185, 129, 0.15); color: var(--color-success, #10b981); }
+.status-badge--cancelled { background-color: rgba(100, 116, 139, 0.15); color: var(--color-text-muted, #64748b); }
+
+/* Cancel Button */
+.btn-cancel-ticket {
+  background-color: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--color-danger, #ef4444);
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-ticket:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-danger, #ef4444);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .student-maint__content {
+    grid-template-columns: 1fr;
+  }
+}

@@ -117,17 +117,20 @@ export class NotificationService {
     if (!invoice.contractId) return;
     const contract = await prisma.contract.findUnique({
       where: { id: invoice.contractId },
-      select: { userId: true, room: { select: { roomNumber: true } } },
+      include: {
+        student: { select: { userId: true } },
+        bed: { include: { room: { select: { roomNumber: true } } } },
+      },
     });
-    if (!contract) return;
+    if (!contract || !contract.student?.userId) return;
 
-    const roomNum = contract.room?.roomNumber ?? 'N/A';
+    const roomNum = contract.bed?.room?.roomNumber ?? 'N/A';
     const amount = invoice.totalAmount.toLocaleString('vi-VN');
     const due = new Date(invoice.dueDate).toLocaleDateString('vi-VN');
 
     // Gửi cho student
     await this.send({
-      userId: contract.userId,
+      userId: contract.student.userId,
       type: 'INVOICE_CREATED',
       priority: 'HIGH',
       title: `Hóa đơn mới — Phòng ${roomNum}`,
@@ -152,17 +155,21 @@ export class NotificationService {
     const invoice = await prisma.invoice.findUnique({
       where: { id: invoiceId },
       include: {
-        contract: { select: { userId: true } },
+        contract: {
+          include: {
+            student: { select: { userId: true } }
+          }
+        },
         room: { select: { roomNumber: true } },
       },
     });
-    if (!invoice || !invoice.contract) return;
+    if (!invoice || !invoice.contract || !invoice.contract.student?.userId) return;
 
     const roomNum = invoice.room?.roomNumber ?? 'N/A';
     const amount = invoice.totalAmount.toLocaleString('vi-VN');
 
     await this.send({
-      userId: invoice.contract.userId,
+      userId: invoice.contract.student.userId,
       type: 'INVOICE_PAID',
       priority: 'LOW',
       title: `Thanh toán thành công — Phòng ${roomNum}`,
@@ -203,14 +210,17 @@ export class NotificationService {
   async onContractTerminated(contractId: string) {
     const contract = await prisma.contract.findUnique({
       where: { id: contractId },
-      include: { room: { select: { roomNumber: true } } },
+      include: {
+        student: { select: { userId: true } },
+        bed: { include: { room: { select: { roomNumber: true } } } },
+      },
     });
-    if (!contract) return;
+    if (!contract || !contract.student?.userId) return;
 
-    const roomNum = contract.room?.roomNumber ?? 'N/A';
+    const roomNum = contract.bed?.room?.roomNumber ?? 'N/A';
 
     await this.send({
-      userId: contract.userId,
+      userId: contract.student.userId,
       type: 'CONTRACT_TERMINATED',
       priority: 'HIGH',
       title: `Hợp đồng kết thúc — Phòng ${roomNum}`,

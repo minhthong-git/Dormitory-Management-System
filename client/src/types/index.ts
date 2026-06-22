@@ -173,3 +173,61 @@ export interface ResetPasswordPayload {
   newPassword?: string;
 }
 
+// ============================================================
+// Asset & Maintenance Types
+// ============================================================
+
+export interface Asset {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+  status: 'GOOD' | 'DAMAGED' | 'REPAIRING' | 'REPLACED' | string;
+  description?: string;
+  roomId: string;
+  createdAt: string;
+  updatedAt: string;
+  room?: {
+    roomNumber: string;
+    building?: { name: string };
+  };
+}
+
+export interface MaintenanceRequest {
+  id: string;
+  roomId: string;
+  assetId?: string;
+  studentId: string;
+  title: string;
+  description: string;
+  status: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  staffId?: string;
+  notes?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  room?: { roomNumber: string };
+  asset?: { name: string; code: string };
+  student?: { fullName: string; phone?: string };
+  staff?: { fullName: string; phone?: string };
+}
+
+export interface UtilityReading {
+  id: string;
+  roomId: string;
+  billingMonth: number;
+  billingYear: number;
+  previousElectric: number;
+  currentElectric: number;
+  electricUsed: number;
+  previousWater: number;
+  currentWater: number;
+  waterUsed: number;
+  electricPrice: number;
+  waterPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  room?: Room;
+}
+

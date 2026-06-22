@@ -1,0 +1,268 @@
+/* ── AdminMaintenancePage Styling ── */
+.maint-page {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1e293b;
+}
+
+/* Header */
+.maint-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.maint-page__title {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 0.25rem 0;
+}
+
+.maint-page__subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Grid layout for tickets */
+.maint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Ticket Card */
+.ticket-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+/* Color indicator top bar */
+.ticket-card__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+.indicator--pending { background-color: #ef4444; }
+.indicator--assigned { background-color: #3b82f6; }
+.indicator--in_progress { background-color: #f59e0b; }
+.indicator--resolved { background-color: #10b981; }
+.indicator--cancelled { background-color: #64748b; }
+
+.ticket-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.ticket-card__room {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #5b5fef;
+  background: rgba(91, 95, 239, 0.1);
+  padding: 0.25rem 0.625rem;
+  border-radius: 8px;
+}
+
+.ticket-card__priority {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.priority--low { background: #f1f5f9; color: #475569; }
+.priority--medium { background: #fef3c7; color: #b45309; }
+.priority--high { background: #fee2e2; color: #b91c1c; }
+.priority--urgent { background: #fecdd3; color: #9f1239; animation: pulseRed 2s infinite; }
+
+@keyframes pulseRed {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.ticket-card__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.ticket-card__desc {
+  font-size: 0.875rem;
+  color: #475569;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 4.5em;
+}
+
+.ticket-card__meta {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+  margin-top: auto;
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meta-row strong {
+  color: #334155;
+}
+
+/* Action button bar inside card */
+.ticket-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-card {
+  flex: 1;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.btn-card--primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+.btn-card--primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-card--secondary {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+.btn-card--secondary:hover {
+  background-color: #d97706;
+}
+
+.btn-card--success {
+  background-color: #10b981;
+  color: #ffffff;
+}
+.btn-card--success:hover {
+  background-color: #059669;
+}
+
+.btn-card--outline {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+.btn-card--outline:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* Status tabs */
+.maint-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+  overflow-x: auto;
+}
+
+.maint-tab {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.maint-tab:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.maint-tab--active {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+/* Badge count inside tab */
+.tab-badge {
+  margin-left: 0.375rem;
+  font-size: 0.75rem;
+  background-color: rgba(0, 0, 0, 0.08);
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  color: inherit;
+}
+
+.maint-tab--active .tab-badge {
+  background-color: rgba(217, 119, 6, 0.2);
+}
+
+/* Custom Modal notes output */
+.modal-info-box {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.modal-info-box p {
+  margin: 0.25rem 0;
+}

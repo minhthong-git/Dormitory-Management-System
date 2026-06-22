@@ -36,6 +36,7 @@ const ADMIN_NAV: NavItem[] = [
   { label: 'Quản lý Tòa nhà',        to: '/buildings',           icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
   { label: 'Quản lý Phòng',          to: '/admin/rooms',         icon: 'M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18' },
   { label: 'Quản lý Giường',         to: '/admin/beds',          icon: 'M2 20h20M5 20V14h14v6M5 14V4h14v10M5 9h14' },
+  { label: 'Quản lý Tài sản',        to: '/admin/assets',        icon: 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM12 22V12M12 12l8.5-4.9M12 12L3.5 7.1' },
   { label: 'Quản lý Hợp đồng',       to: '/admin/contracts',     icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6' },
   { label: 'Quản lý Sinh viên',      to: '/admin/students',      icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
   { label: 'Hóa đơn',                to: '/admin/invoices',      icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8' },
