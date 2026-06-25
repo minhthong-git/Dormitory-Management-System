@@ -76,6 +76,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, sidebarCollapsed }) => {
     } else if (referenceType === 'CONTRACT') {
       navigate('/dashboard');
       setNotifOpen(false);
+    } else if (referenceType === 'SYSTEM') {
+      const isAdminOrStaff = user?.role === 'ADMIN' || user?.role === 'STAFF';
+      navigate(isAdminOrStaff ? '/admin/maintenance' : '/report');
+      setNotifOpen(false);
     }
   };
 

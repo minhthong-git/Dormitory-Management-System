@@ -21,6 +21,7 @@
   color: #0f172a;
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0 0 0.25rem 0;
 }
@@ -123,6 +124,7 @@
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -265,4 +267,280 @@
 
 .modal-info-box p {
   margin: 0.25rem 0;
+  color: #334155 !important;
 }
+
+.modal-info-box p strong {
+  color: #0f172a !important;
+}
+
+/* Control Panel & Filters */
+.assets-page__control-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.assets-page__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.filter-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.filter-input-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-control {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.filter-control:focus {
+  border-color: #5b5fef;
+  box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.15);
+  background-color: #ffffff;
+}
+
+/* Modal Form Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 550px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff !important;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a !important; /* Force title text to be dark black */
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  color: #334155;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  background: #ffffff !important;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155 !important; /* Force label text to be dark */
+}
+
+.form-input {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  padding: 0.65rem 0.875rem !important;
+  font-size: 0.875rem !important;
+  outline: none !important;
+  background-color: #ffffff !important; /* Force white background */
+  color: #0f172a !important; /* Force dark text */
+  transition: all 0.2s ease !important;
+}
+
+.form-input:focus {
+  border-color: #5b5fef !important;
+  box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.15) !important;
+}
+
+/* Fix dropdown option text color in some browsers */
+.form-input option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff !important;
+}
+
+.btn-cancel {
+  background: #f1f5f9 !important;
+  border: none !important;
+  color: #475569 !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0 !important;
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #5b5fef 0%, #474adb 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 10px rgba(91, 95, 239, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-submit:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 14px rgba(91, 95, 239, 0.3) !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Alerts section at top of Maintenance Management page */
+.maint-alerts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.maint-alert-card {
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.03);
+  animation: slideDownAlert 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.maint-alert-card__icon {
+  font-size: 1.25rem;
+  background: rgba(245, 158, 11, 0.12);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.maint-alert-card__body {
+  flex: 1;
+}
+
+.maint-alert-card__title {
+  margin: 0 0 0.125rem 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.maint-alert-card__message {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.maint-alert-card__btn {
+  background: #ffffff;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #b45309;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.maint-alert-card__btn:hover {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: #b45309;
+}
+
+@keyframes slideDownAlert {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+

@@ -206,6 +206,10 @@ const AdminAssetsPage: React.FC = () => {
     DESK: 'Bàn học 📝',
     CHAIR: 'Ghế ngồi 🪑',
     FAN: 'Quạt máy 🌬️',
+    LIGHTBULB: 'Bóng đèn 💡',
+    LOCKER: 'Tủ locker 🗄️',
+    WATER_TAP: 'Vòi nước 🚰',
+    POWER_SOCKET: 'Ổ điện 🔌',
   };
 
   const statusBadgeClass = (status: string) => {
@@ -333,6 +337,10 @@ const AdminAssetsPage: React.FC = () => {
               <option value="DESK">Bàn học</option>
               <option value="CHAIR">Ghế</option>
               <option value="FAN">Quạt treo tường</option>
+              <option value="LIGHTBULB">Bóng đèn</option>
+              <option value="LOCKER">Tủ locker</option>
+              <option value="WATER_TAP">Vòi nước</option>
+              <option value="POWER_SOCKET">Ổ điện</option>
             </select>
           </div>
 
@@ -523,6 +531,10 @@ const AdminAssetsPage: React.FC = () => {
                         <option value="DESK">Bàn học</option>
                         <option value="CHAIR">Ghế</option>
                         <option value="FAN">Quạt treo tường</option>
+                        <option value="LIGHTBULB">Bóng đèn</option>
+                        <option value="LOCKER">Tủ locker</option>
+                        <option value="WATER_TAP">Vòi nước</option>
+                        <option value="POWER_SOCKET">Ổ điện</option>
                       </select>
                     </div>
 

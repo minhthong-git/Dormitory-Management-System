@@ -176,3 +176,139 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Feedback section */
+.student-ticket__feedback-section {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border, rgba(255, 255, 255, 0.07));
+}
+
+.student-ticket__feedback-view {
+  background: rgba(245, 158, 11, 0.03);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.feedback-stars {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.feedback-stars__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+}
+
+.stars-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.star-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.star-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.star-button:hover {
+  transform: scale(1.15);
+}
+
+.feedback-text-content {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text, #f1f5f9);
+  font-style: italic;
+  word-break: break-word;
+}
+
+/* Feedback Form styling */
+.student-ticket__feedback-form {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.07));
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.feedback-stars-input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.feedback-comment-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feedback-textarea {
+  background-color: var(--color-background, #0F172A);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.07));
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text, #f1f5f9);
+  font-size: 0.8125rem;
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+  transition: border-color var(--transition, 150ms ease);
+}
+
+.feedback-textarea:focus {
+  border-color: var(--color-primary, #5B5FEF);
+}
+
+.feedback-textarea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.char-counter {
+  font-size: 0.7rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.btn-submit-feedback {
+  background: linear-gradient(135deg, var(--color-primary, #5B5FEF) 0%, #4044c9 100%);
+  color: #fff;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-submit-feedback:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-submit-feedback:disabled {
+  background: #2d3a4d;
+  color: #64748b;
+  cursor: not-allowed;
+  opacity: 0.6;
+}

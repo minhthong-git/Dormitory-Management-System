@@ -6,6 +6,7 @@ import {
   getAllRequests,
   assignStaff,
   updateRequestStatus,
+  submitRequestFeedback,
 } from '@/controllers/maintenance.controller';
 
 const router = Router();
@@ -25,5 +26,8 @@ router.patch('/:id/assign', requireRoles('ADMIN', 'STAFF'), assignStaff);
 
 // Cập nhật trạng thái sự cố (Staff đổi trạng thái bất kỳ, Student chỉ được phép Hủy của chính mình)
 router.patch('/:id/status', updateRequestStatus);
+
+// Sinh viên đánh giá chất lượng sửa chữa cho các yêu cầu đã hoàn thành (RESOLVED)
+router.post('/:id/feedback', requireRoles('STUDENT'), submitRequestFeedback);
 
 export default router;
