@@ -12,6 +12,7 @@ import studentRoutes from './student.routes';
 import bedRoutes from './bed.routes';
 import assetRoutes from './asset.routes';
 import maintenanceRoutes from './maintenance.routes';
+import paymentRoutes from './payment.routes';
 
 const router = Router();
 
@@ -29,6 +30,7 @@ router.use('/utilities', utilityRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/assets', assetRoutes);
 router.use('/maintenance', maintenanceRoutes);
+router.use('/payments', paymentRoutes);
 
 
 // Health check

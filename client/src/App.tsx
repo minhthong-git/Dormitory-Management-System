@@ -34,6 +34,7 @@ const AdminMaintenancePage = lazy(() => import('@/pages/admin/AdminMaintenancePa
 const MaintenanceRequestPage = lazy(() => import('@/pages/MaintenanceRequestPage'));
 const UnauthorizedPage   = lazy(() => import('@/pages/UnauthorizedPage'));
 const NotFoundPage       = lazy(() => import('@/pages/NotFoundPage'));
+const PaymentResultPage  = lazy(() => import('@/pages/PaymentResultPage'));
 
 const PageLoader = () => (
   <div className="loading-screen">
@@ -66,6 +67,7 @@ function App() {
                   <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/report"    element={<MaintenanceRequestPage />} />
+                  <Route path="/payment/result" element={<PaymentResultPage />} />
                 </Route>
               </Route>
 

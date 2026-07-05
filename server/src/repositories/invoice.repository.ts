@@ -2,7 +2,7 @@ import { prisma } from '@/config/db';
 import type { CreateInvoiceDto, UpdateInvoiceDto, PaymentStatus } from '@/types';
 
 // Helper function to map student user details to contract user details for backward compatibility
-function mapContractUser<T extends { contract?: any }>(invoice: T): T {
+function mapContractUser(invoice: any): any {
   if (invoice?.contract?.student) {
     const student = invoice.contract.student;
     invoice.contract.userId = student.userId;

@@ -39,4 +39,11 @@ export const env = {
   // Email Config
   EMAIL_USER: requireEnv('EMAIL_USER'),
   EMAIL_PASS: requireEnv('EMAIL_PASS'),
+
+  // PayOS Payment Gateway
+  PAYOS_CLIENT_ID: process.env.PAYOS_CLIENT_ID ?? '',
+  PAYOS_API_KEY: process.env.PAYOS_API_KEY ?? '',
+  PAYOS_CHECKSUM_KEY: process.env.PAYOS_CHECKSUM_KEY ?? '',
+  PAYOS_RETURN_URL: process.env.PAYOS_RETURN_URL ?? 'http://localhost:5173/payment/result',
+  PAYOS_CANCEL_URL: process.env.PAYOS_CANCEL_URL ?? 'http://localhost:5173/payment/cancel',
 } as const;

@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/config/db';
 import { sendSuccess } from '@/utils/response';
-import { AppError } from '@/middleware/errorHandler';
 
 // ── GET /api/dashboard/stats ──────────────────────────────────
 // Admin/Staff: trả về thống kê toàn hệ thống

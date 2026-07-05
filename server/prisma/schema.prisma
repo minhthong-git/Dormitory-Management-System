@@ -175,6 +175,7 @@ model Invoice {
 
   room          Room          @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   contract      Contract?     @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  paymentTransactions PaymentTransaction[]
 
   @@unique([roomId, billingMonth, billingYear])
   @@index([roomId])
@@ -280,5 +281,32 @@ model MaintenanceRequest {
   staff       User?    @relation("StaffMaintenance", fields: [staffId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("maintenance_requests")
+}
+
+model PaymentTransaction {
+  id                    String    @id @default(uuid())
+  invoiceId             String
+  userId                String
+  /// Allowed values: PAYOS
+  provider              String    @default("PAYOS")
+  providerTransactionId String?
+  orderCode             Int       @unique
+  amount                Float
+  /// Allowed values: PENDING | SUCCESS | FAILED | CANCELLED | EXPIRED
+  status                String    @default("PENDING")
+  paymentUrl            String?
+  checkoutUrl           String?
+  qrCode                String?
+  expiredAt             DateTime?
+  paidAt                DateTime?
+  rawResponse           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([invoiceId])
+  @@index([orderCode])
+  @@map("payment_transactions")
 }
 
