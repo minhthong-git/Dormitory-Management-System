@@ -1,0 +1,45 @@
+.payment-result-page {
+  width: 100%;
+}
+
+.payment-result-card {
+  width: 100%;
+  max-width: 480px;
+  background-color: rgb(15 23 42 / 0.4); /* slate-900 / 40% */
+  border: 1px solid rgb(51 65 85 / 0.5); /* slate-700 / 50% */
+  padding: 2.5rem 2rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  backdrop-filter: blur(8px);
+}
+
+.payment-result-card--success {
+  border-color: rgba(16, 185, 129, 0.2); /* emerald-500 / 20% */
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.05);
+}
+
+.payment-result-card--cancelled {
+  border-color: rgba(245, 158, 11, 0.2); /* amber-500 / 20% */
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.05);
+}
+
+.payment-result-card--failed,
+.payment-result-card--error {
+  border-color: rgba(244, 63, 94, 0.2); /* rose-500 / 20% */
+  box-shadow: 0 0 40px rgba(244, 63, 94, 0.05);
+}
+
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--primary-color, rgb(99, 102, 241));
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

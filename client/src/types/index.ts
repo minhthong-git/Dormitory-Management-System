@@ -231,3 +231,21 @@ export interface UtilityReading {
   room?: Room;
 }
 
+export interface PaymentTransaction {
+  id: string;
+  invoiceId: string;
+  userId: string;
+  provider: string;
+  providerTransactionId?: string;
+  orderCode: number;
+  amount: number;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
+  paymentUrl?: string;
+  checkoutUrl?: string;
+  qrCode?: string;
+  expiredAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

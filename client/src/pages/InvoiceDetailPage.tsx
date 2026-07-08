@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { invoiceService } from '@/services/invoiceService';
 import { utilityService } from '@/services/utilityService';
+import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/context/AuthContext';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import './InvoiceDetailPage.css';
@@ -15,9 +16,16 @@ const InvoiceDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Payment mock states
+  // Payment states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showManualPayModal, setShowManualPayModal] = useState(false);
+  const [payosLink, setPayosLink] = useState<{
+    checkoutUrl: string;
+    qrCode: string;
+    orderCode: number;
+  } | null>(null);
+  const [pollingIntervalId, setPollingIntervalId] = useState<number | null>(null);
 
   const fetchInvoiceAndUtility = async () => {
     if (!id) return;
@@ -49,7 +57,66 @@ const InvoiceDetailPage: React.FC = () => {
     fetchInvoiceAndUtility();
   }, [id]);
 
-  const handlePay = async () => {
+  const handlePayOS = async () => {
+    if (!invoice) return;
+    setIsProcessingPayment(true);
+    setError(null);
+    try {
+      const res = await paymentService.create(invoice.id);
+      setPayosLink(res.data.data);
+      setShowPayModal(true);
+      
+      // Start polling for status
+      const orderCode = res.data.data.orderCode;
+      const intervalId = window.setInterval(async () => {
+        try {
+          const statusRes = await paymentService.getStatus(orderCode);
+          if (statusRes.data.data.status === 'SUCCESS') {
+            window.clearInterval(intervalId);
+            setPollingIntervalId(null);
+            setPayosLink(null);
+            setShowPayModal(false);
+            alert('Thanh toán qua PayOS thành công!');
+            fetchInvoiceAndUtility();
+          } else if (['CANCELLED', 'FAILED', 'EXPIRED'].includes(statusRes.data.data.status)) {
+            window.clearInterval(intervalId);
+            setPollingIntervalId(null);
+            setPayosLink(null);
+            setShowPayModal(false);
+            alert(`Thanh toán thất bại hoặc đã bị hủy (Trạng thái: ${statusRes.data.data.status})`);
+            fetchInvoiceAndUtility();
+          }
+        } catch (e) {
+          console.error('Lỗi khi kiểm tra trạng thái thanh toán:', e);
+        }
+      }, 3000);
+      
+      setPollingIntervalId(intervalId);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Không thể tạo liên kết thanh toán PayOS');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleClosePayModal = () => {
+    if (pollingIntervalId) {
+      window.clearInterval(pollingIntervalId);
+      setPollingIntervalId(null);
+    }
+    setPayosLink(null);
+    setShowPayModal(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalId) {
+        window.clearInterval(pollingIntervalId);
+      }
+    };
+  }, [pollingIntervalId]);
+
+  const handleManualPay = async () => {
     if (!invoice) return;
     setIsProcessingPayment(true);
     try {
@@ -58,7 +125,7 @@ const InvoiceDetailPage: React.FC = () => {
         paymentStatus: 'PAID',
         paidDate: new Date().toISOString(),
       });
-      setShowPayModal(false);
+      setShowManualPayModal(false);
       fetchInvoiceAndUtility();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Thanh toán hóa đơn thất bại');
@@ -128,12 +195,22 @@ const InvoiceDetailPage: React.FC = () => {
             🖨️ In hóa đơn
           </button>
           {!isPaid && (
-            <button
-              onClick={() => setShowPayModal(true)}
-              className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
-            >
-              💳 Thanh toán hóa đơn
-            </button>
+            isStudent ? (
+              <button
+                onClick={handlePayOS}
+                disabled={isProcessingPayment}
+                className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-55"
+              >
+                💳 Thanh toán PayOS
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowManualPayModal(true)}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+              >
+                ✓ Xác nhận đã thu tiền
+              </button>
+            )
           )}
         </div>
       </div>
@@ -323,48 +400,89 @@ const InvoiceDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Pay QR Modal */}
-      {showPayModal && (
+      {/* Pay QR Modal (PayOS) */}
+      {showPayModal && payosLink && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
             <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-              <h3 className="text-lg font-bold text-white">Xác nhận chuyển khoản</h3>
-              <button onClick={() => setShowPayModal(false)} className="text-2xl text-slate-500 hover:text-white transition-colors">
+              <h3 className="text-lg font-bold text-white">Quét mã QR thanh toán</h3>
+              <button onClick={handleClosePayModal} className="text-2xl text-slate-500 hover:text-white transition-colors">
                 ×
               </button>
             </div>
             
             <div className="p-6 text-center space-y-6">
               <div className="space-y-1">
-                <span className="text-xs text-slate-400 font-semibold block uppercase">Cổng thanh toán tự động DormPay</span>
+                <span className="text-xs text-slate-400 font-semibold block uppercase">Cổng thanh toán tự động PayOS</span>
                 <span className="text-3xl font-extrabold text-primary">
                   {invoice.totalAmount.toLocaleString('vi-VN')} ₫
                 </span>
               </div>
 
-              {/* QR Mock code */}
-              <div className="w-52 h-52 bg-slate-850 border border-slate-700/50 rounded-2xl mx-auto flex flex-col items-center justify-center p-4 relative group hover:border-primary transition-all">
-                <div className="w-full h-full border-4 border-slate-800 rounded-xl relative flex flex-col items-center justify-center bg-white text-black select-none">
-                  {/* Visual QR Grid mock */}
-                  <span className="font-black text-xs text-slate-600 tracking-wider">DormMS</span>
-                  <span className="text-xxs text-slate-400 mt-2 font-mono">SCAN TO PAY</span>
-                  {/* Decorative QR corners */}
-                  <div className="absolute top-2 left-2 w-4 h-4 border-t-4 border-l-4 border-slate-950" />
-                  <div className="absolute top-2 right-2 w-4 h-4 border-t-4 border-r-4 border-slate-950" />
-                  <div className="absolute bottom-2 left-2 w-4 h-4 border-b-4 border-l-4 border-slate-950" />
-                  <div className="absolute bottom-2 right-2 w-4 h-4 border-b-4 border-r-4 border-slate-950" />
-                </div>
+              {/* QR Code */}
+              <div className="w-52 h-52 bg-white rounded-2xl mx-auto flex items-center justify-center p-2 border border-slate-700/50 shadow-md">
+                {payosLink.qrCode ? (
+                  <img src={payosLink.qrCode} alt="VietQR PayOS" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="text-black font-semibold text-sm">QR Code not available</div>
+                )}
               </div>
 
-              <div className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
-                Vui lòng quét mã và thực hiện chuyển khoản. Sau khi chuyển xong, bấm nút xác nhận bên dưới.
+              <div className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto space-y-3">
+                <p>Mở ứng dụng ngân hàng quét mã VietQR để thanh toán nhanh.</p>
+                <p className="text-slate-500">Mã đơn hàng: <span className="font-mono text-slate-400 font-bold">{payosLink.orderCode}</span></p>
               </div>
+
+              <div>
+                <a
+                  href={payosLink.checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                >
+                  🔗 Mở trang thanh toán PayOS
+                </a>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={handleClosePayModal}
+                className="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Confirmation Modal (Staff/Admin) */}
+      {showManualPayModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <h3 className="text-lg font-bold text-white">Xác nhận thanh toán</h3>
+              <button onClick={() => setShowManualPayModal(false)} className="text-2xl text-slate-500 hover:text-white transition-colors">
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6 text-center space-y-4">
+              <span className="text-3xl block">💵</span>
+              <p className="text-slate-300 text-sm">
+                Bạn có chắc chắn muốn xác nhận đã thu tiền và đánh dấu hóa đơn này là <strong>ĐÃ THANH TOÁN</strong>?
+              </p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {invoice.totalAmount.toLocaleString('vi-VN')} ₫
+              </p>
             </div>
 
             <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setShowPayModal(false)}
+                onClick={() => setShowManualPayModal(false)}
                 className="px-4 py-2 text-xs font-semibold bg-transparent text-slate-400 hover:text-white transition-colors"
                 disabled={isProcessingPayment}
               >
@@ -372,11 +490,11 @@ const InvoiceDetailPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={handlePay}
-                className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20 transition-all"
+                onClick={handleManualPay}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all"
                 disabled={isProcessingPayment}
               >
-                {isProcessingPayment ? 'Đang xác thực...' : 'Xác nhận Đã Chuyển Khoản'}
+                {isProcessingPayment ? 'Đang thực hiện...' : 'Xác nhận Đã Thu Tiền'}
               </button>
             </div>
           </div>
