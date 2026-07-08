@@ -180,7 +180,7 @@ async function main() {
     const indexStr = (i + 1).toString().padStart(2, '0');
     const email = `student${indexStr}@dormitory.com`;
     const studentCode = `SV2026${indexStr}`;
-    
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -277,80 +277,6 @@ async function main() {
       }
     }
   }
-
-  // 7. Create Maintenance Requests
-  console.log('🔧 Creating maintenance requests...');
-  // Find active contracts
-  const activeContracts = await prisma.contract.findMany({
-    where: { status: 'ACTIVE' },
-    include: {
-      student: true,
-      bed: { include: { room: true } },
-    },
-  });
-
-  if (activeContracts.length > 0) {
-    // Request 1: Pending
-    const c1 = activeContracts[0];
-    const room1Assets = await prisma.asset.findMany({ where: { roomId: c1.bed.roomId } });
-    const brokenAsset1 = room1Assets.find((a) => a.type === 'AIR_CONDITIONER');
-
-    await prisma.maintenanceRequest.create({
-      data: {
-        roomId: c1.bed.roomId,
-        assetId: brokenAsset1?.id,
-        studentId: c1.studentId,
-        title: 'Máy lạnh không lạnh',
-        description: 'Máy lạnh bật 16 độ nhưng chỉ có gió, không mát. Nhờ Kỹ thuật kiểm tra gas.',
-        status: 'PENDING',
-        priority: 'HIGH',
-      },
-    });
-
-    // Request 2: Assigned to Staff
-    if (activeContracts.length > 1) {
-      const c2 = activeContracts[1];
-      const room2Assets = await prisma.asset.findMany({ where: { roomId: c2.bed.roomId } });
-      const brokenAsset2 = room2Assets.find((a) => a.type === 'FAN');
-
-      await prisma.maintenanceRequest.create({
-        data: {
-          roomId: c2.bed.roomId,
-          assetId: brokenAsset2?.id,
-          studentId: c2.studentId,
-          title: 'Quạt treo tường phát ra tiếng ồn',
-          description: 'Quạt treo tường khi bật số 3 kêu rè rè rất to, không ngủ được.',
-          status: 'ASSIGNED',
-          priority: 'MEDIUM',
-          staffId: staff.id,
-          notes: 'Nhận yêu cầu phân công, sẽ qua kiểm tra vào chiều thứ 2.',
-        },
-      });
-    }
-
-    // Request 3: Resolved
-    if (activeContracts.length > 2) {
-      const c3 = activeContracts[2];
-      const room3Assets = await prisma.asset.findMany({ where: { roomId: c3.bed.roomId } });
-      const brokenAsset3 = room3Assets.find((a) => a.type === 'CHAIR');
-
-      await prisma.maintenanceRequest.create({
-        data: {
-          roomId: c3.bed.roomId,
-          assetId: brokenAsset3?.id,
-          studentId: c3.studentId,
-          title: 'Ghế học tập bị gãy chân',
-          description: 'Ghế tựa nhựa bị nứt gãy một bên chân từ tối qua.',
-          status: 'RESOLVED',
-          priority: 'LOW',
-          staffId: staff.id,
-          notes: 'Đã thay mới bằng ghế nhựa Hòa Phát khác cùng loại.',
-          resolvedAt: new Date(),
-        },
-      });
-    }
-  }
-  console.log('✅ Created sample maintenance requests.');
 
   console.log('🌱 Seeding database completed successfully!');
 }

@@ -145,8 +145,8 @@ export const createContract = async (req: Request, res: Response, next: NextFunc
     // Trigger notification (fire-and-forget)
     notificationService.onContractCreated({
       id: contract.id,
-      userId,
-      roomId,
+      userId: student.userId || '',
+      roomId: bed.roomId,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
     }).catch(() => {});

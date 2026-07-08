@@ -21,6 +21,7 @@ const AdminRoomsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [buildings, setBuildings] = useState<any[]>([]);
+  const [isPriceFocused, setIsPriceFocused] = useState(false);
   const [formData, setFormData] = useState({
     roomNumber: '',
     buildingId: '',
@@ -80,6 +81,7 @@ const AdminRoomsPage: React.FC = () => {
       description: '',
       status: 'AVAILABLE'
     });
+    setIsPriceFocused(false);
     setIsModalOpen(true);
   };
 
@@ -96,6 +98,7 @@ const AdminRoomsPage: React.FC = () => {
       description: room.description || '',
       status: room.status
     });
+    setIsPriceFocused(false);
     setIsModalOpen(true);
   };
 
@@ -415,7 +418,9 @@ const AdminRoomsPage: React.FC = () => {
                     <input 
                       type="text" 
                       className="form-input" 
-                      value={formData.pricePerMonth === 0 ? '' : formData.pricePerMonth.toLocaleString('vi-VN')} 
+                      value={isPriceFocused ? (formData.pricePerMonth === 0 ? '' : formData.pricePerMonth) : (formData.pricePerMonth === 0 ? '' : formData.pricePerMonth.toLocaleString('vi-VN'))} 
+                      onFocus={() => setIsPriceFocused(true)}
+                      onBlur={() => setIsPriceFocused(false)}
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, '');
                         setFormData({...formData, pricePerMonth: rawValue ? Number(rawValue) : 0});

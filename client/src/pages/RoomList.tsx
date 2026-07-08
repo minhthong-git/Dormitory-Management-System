@@ -10,6 +10,7 @@ export default function RoomList() {
   // State quản lý Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isPriceFocused, setIsPriceFocused] = useState(false);
   
   const [formData, setFormData] = useState({
     roomNumber: '',
@@ -52,6 +53,7 @@ export default function RoomList() {
     setFormData({
       roomNumber: '', type: 'STANDARD', capacity: 4, pricePerMonth: 0, floor: 1, description: '', status: 'AVAILABLE'
     });
+    setIsPriceFocused(false);
     setIsModalOpen(true);
   };
 
@@ -67,6 +69,7 @@ export default function RoomList() {
       description: room.description || '',
       status: room.status
     });
+    setIsPriceFocused(false);
     setIsModalOpen(true);
   };
 
@@ -233,7 +236,9 @@ export default function RoomList() {
                     <input 
                       type="text" 
                       className="form-input" 
-                      value={formData.pricePerMonth === 0 ? '' : formData.pricePerMonth.toLocaleString('vi-VN')} 
+                      value={isPriceFocused ? (formData.pricePerMonth === 0 ? '' : formData.pricePerMonth) : (formData.pricePerMonth === 0 ? '' : formData.pricePerMonth.toLocaleString('vi-VN'))} 
+                      onFocus={() => setIsPriceFocused(true)}
+                      onBlur={() => setIsPriceFocused(false)}
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, '');
                         setFormData({...formData, pricePerMonth: rawValue ? Number(rawValue) : 0});

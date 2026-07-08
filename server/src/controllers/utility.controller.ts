@@ -132,8 +132,8 @@ async function checkUserOccupiesRoom(userId: string, roomId: string): Promise<bo
   const { prisma } = await import('@/config/db');
   const activeContract = await prisma.contract.findFirst({
     where: {
-      userId,
-      roomId,
+      student: { userId },
+      bed: { roomId },
       status: 'ACTIVE',
     },
   });

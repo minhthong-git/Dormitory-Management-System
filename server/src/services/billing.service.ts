@@ -73,7 +73,7 @@ export class BillingService {
     }
 
     const activeContract = await prisma.contract.findFirst({
-      where: { roomId, status: 'ACTIVE' },
+      where: { bed: { roomId }, status: 'ACTIVE' },
     });
 
     if (!activeContract) {
@@ -145,8 +145,8 @@ export class BillingService {
         include: {
           room: { select: { roomNumber: true } },
           contract: {
-            select: {
-              user: { select: { fullName: true, studentId: true } },
+            include: {
+              student: { include: { user: { select: { fullName: true, studentId: true } } } },
             },
           },
         },
@@ -177,7 +177,7 @@ export class BillingService {
 
     // 3. Fetch active contract for the room (Rule 1: "Only active contracts can generate invoices")
     const activeContract = await prisma.contract.findFirst({
-      where: { roomId, status: 'ACTIVE' },
+      where: { bed: { roomId }, status: 'ACTIVE' },
     });
     if (!activeContract) {
       throw new AppError('Không tìm thấy hợp đồng đang hoạt động cho phòng này. Không thể lập hóa đơn.', 400);
@@ -215,8 +215,8 @@ export class BillingService {
       include: {
         room: { select: { roomNumber: true } },
         contract: {
-          select: {
-            user: { select: { fullName: true, studentId: true } },
+          include: {
+            student: { include: { user: { select: { fullName: true, studentId: true } } } },
           },
         },
       },
@@ -369,7 +369,7 @@ export class BillingService {
         room: { select: { roomNumber: true } },
         contract: {
           include: {
-            user: { select: { fullName: true, studentId: true } },
+            student: { include: { user: { select: { fullName: true, studentId: true } } } },
           },
         },
       },
