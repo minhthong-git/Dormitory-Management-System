@@ -13,7 +13,7 @@ const MaintenanceRequestPage: React.FC = () => {
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [damageSeverity, setDamageSeverity] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('MEDIUM');
   const [selectedAssetId, setSelectedAssetId] = useState('');
 
   // Fetch student's room assets & reported tickets
@@ -55,7 +55,7 @@ const MaintenanceRequestPage: React.FC = () => {
       const payload = {
         title: title.trim(),
         description: description.trim(),
-        priority,
+        damageSeverity,
         assetId: selectedAssetId || null,
       };
 
@@ -64,7 +64,7 @@ const MaintenanceRequestPage: React.FC = () => {
         alert('Gửi yêu cầu sửa chữa thành công!');
         setTitle('');
         setDescription('');
-        setPriority('MEDIUM');
+        setDamageSeverity('MEDIUM');
         setSelectedAssetId('');
         // Reload list
         fetchRoomInfoAndTickets();
@@ -177,19 +177,19 @@ const MaintenanceRequestPage: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="maint-priority">Mức độ ưu tiên</label>
-              <select
-                id="maint-priority"
-                className="form-input"
-                value={priority}
-                onChange={e => setPriority(e.target.value as any)}
-                disabled={isSubmitting}
-              >
-                <option value="LOW">Thấp (Chưa cần gấp, trong tuần)</option>
-                <option value="MEDIUM">Trung bình (Sửa trong 1-2 ngày)</option>
-                <option value="HIGH">Cao (Cần xử lý trong ngày)</option>
-                <option value="URGENT">Khẩn cấp (Sự cố nghiêm trọng, chập điện, tràn nước...)</option>
-              </select>
+               <label htmlFor="maint-severity">Mức độ nghiêm trọng</label>
+               <select
+                 id="maint-severity"
+                 className="form-input"
+                 value={damageSeverity}
+                 onChange={e => setDamageSeverity(e.target.value as any)}
+                 disabled={isSubmitting}
+               >
+                 <option value="LOW">Thấp (Cần xử lý trong tuần)</option>
+                 <option value="MEDIUM">Trung bình (1-2 ngày)</option>
+                 <option value="HIGH">Cao (Trong ngày)</option>
+                 <option value="CRITICAL">Rất cao (Khẩn cấp, nguy hiểm)</option>
+               </select>
             </div>
 
             <div className="form-group">

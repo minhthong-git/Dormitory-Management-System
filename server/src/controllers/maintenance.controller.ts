@@ -9,11 +9,20 @@ import { notificationService } from '@/services/notification.service';
 export const createRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?.sub;
-    const { title, description, priority, assetId } = req.body;
+    const { title, description, damageSeverity, assetId } = req.body;
 
     if (!title || !description) {
       throw new AppError('Vui lòng cung cấp tiêu đề và mô tả chi tiết lỗi', 400);
     }
+
+    const severityPriorityMap: Record<string, string> = {
+      LIGHT: 'LOW',
+      NORMAL: 'MEDIUM',
+      SEVERE: 'HIGH',
+      CRITICAL: 'URGENT'
+    };
+    const finalSeverity = damageSeverity || 'NORMAL';
+    const finalPriority = severityPriorityMap[finalSeverity] || 'MEDIUM';
 
     // 1. Tìm Student qua userId
     const student = await prisma.student.findUnique({ where: { userId } });
@@ -55,7 +64,8 @@ export const createRequest = async (req: Request, res: Response, next: NextFunct
         title,
         description,
         status: 'PENDING',
-        priority: priority || 'MEDIUM',
+        priority: finalPriority,
+        damageSeverity: finalSeverity,
       },
       include: {
         room: { select: { roomNumber: true } },
@@ -66,9 +76,9 @@ export const createRequest = async (req: Request, res: Response, next: NextFunct
     // 5. Gửi thông báo thời gian thực đến Staff/Admin
     await notificationService.sendToStaff({
       type: 'SYSTEM', // Gửi dưới dạng SYSTEM thông báo bảo trì mới
-      priority: (priority as any) || 'MEDIUM',
+      priority: (finalPriority as any) || 'MEDIUM',
       title: `Yêu cầu sửa chữa mới — Phòng ${request.room.roomNumber}`,
-      message: `Sinh viên ${student.fullName} báo sự cố: "${title}". Thiết bị: ${request.asset ? `${request.asset.name} (${request.asset.code})` : 'Khác'}.`,
+      message: `Sinh viên ${student.fullName} báo sự cố: "${title}". Nghiêm trọng: ${finalSeverity}. Thiết bị: ${request.asset ? `${request.asset.name} (${request.asset.code})` : 'Khác'}.`,
       referenceId: request.id,
       referenceType: 'SYSTEM',
     });

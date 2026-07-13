@@ -13,7 +13,7 @@ export interface MaintenanceFilters {
 export interface CreateMaintenancePayload {
   title: string;
   description: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  damageSeverity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   assetId?: string | null;
 }
 

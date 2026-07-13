@@ -21,7 +21,16 @@ export const getRooms = async (req: Request, res: Response, next: NextFunction):
     if (buildingId) where.buildingId = buildingId; // Lọc phòng thuộc đúng tòa nhà
 
     const [rooms, total] = await prisma.$transaction([
-      prisma.room.findMany({ where, skip, take: limit, orderBy: { roomNumber: 'asc' } }),
+      prisma.room.findMany({ 
+        where, 
+        skip, 
+        take: limit, 
+        orderBy: { roomNumber: 'asc' },
+        include: {
+          building: { select: { name: true } },
+          assets: true
+        }
+      }),
       prisma.room.count({ where }),
     ]);
 
@@ -80,7 +89,13 @@ export const getAvailableRooms = async (req: Request, res: Response, next: NextF
 export const getRoomById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const room = await prisma.room.findUnique({ where: { id } });
+    const room = await prisma.room.findUnique({ 
+      where: { id },
+      include: {
+        building: { select: { name: true } },
+        assets: true
+      }
+    });
     if (!room) throw new AppError('Phòng không tồn tại', 404);
     sendSuccess(res, room, 'Lấy thông tin phòng thành công');
   } catch (err) {

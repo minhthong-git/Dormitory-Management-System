@@ -68,3 +68,18 @@ export const sendResetPasswordEmail = async (toEmail: string, otp: string) => {
   }
 };
 
+export const sendDormitoryEmail = async (toEmail: string, subject: string, htmlContent: string) => {
+  const mailOptions = {
+    from: `"KTX Dormitory Admin" <${env.EMAIL_USER}>`,
+    to: toEmail,
+    subject,
+    html: htmlContent,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error sending dormitory email:', error);
+  }
+};
+

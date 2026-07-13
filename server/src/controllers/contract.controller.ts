@@ -3,6 +3,7 @@ import { prisma } from '@/config/db';
 import { sendSuccess, sendPaginated } from '@/utils/response';
 import { AppError } from '@/middleware/errorHandler';
 import { notificationService } from '@/services/notification.service';
+import { cronService } from '@/services/cron.service';
 
 // ── GET /api/contracts ────────────────────────────────────────
 export const getContracts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -480,6 +481,16 @@ export const deleteContract = async (req: Request, res: Response, next: NextFunc
     }
 
     sendSuccess(res, null, 'Xóa hợp đồng thành công');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── POST /api/contracts/check-expirations ────────────────────────
+export const triggerContractChecks = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const results = await cronService.checkContractAndPaymentStatus();
+    sendSuccess(res, results, 'Chạy quét kiểm tra hạn hợp đồng & nợ tiền thành công');
   } catch (err) {
     next(err);
   }

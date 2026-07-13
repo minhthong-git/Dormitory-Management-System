@@ -56,6 +56,7 @@ export interface Room {
   updatedAt: string;
   building?: { name: string };
   beds?: Bed[];
+  assets?: Asset[];
 }
 
 export interface Bed {
@@ -202,6 +203,7 @@ export interface MaintenanceRequest {
   description: string;
   status: 'PENDING' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  damageSeverity?: 'LIGHT' | 'NORMAL' | 'SEVERE' | 'CRITICAL' | string;
   staffId?: string;
   notes?: string;
   resolvedAt?: string;

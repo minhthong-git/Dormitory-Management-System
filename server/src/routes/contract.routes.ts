@@ -15,7 +15,8 @@ import {
   deleteContract,
   bookBed,
   approveContract,
-  rejectContract
+  rejectContract,
+  triggerContractChecks
 } from '@/controllers/contract.controller';
 
 const router = Router();
@@ -80,5 +81,8 @@ router.patch('/:id/extend', verifyJWT, requireRoles('ADMIN', 'STAFF'), extendCon
 
 // DELETE /api/contracts/:id — ADMIN/STAFF only
 router.delete('/:id', verifyJWT, requireRoles('ADMIN', 'STAFF'), deleteContract);
+
+// POST   /api/contracts/check-expirations — ADMIN only
+router.post('/check-expirations', verifyJWT, requireRoles('ADMIN'), triggerContractChecks);
 
 export default router;

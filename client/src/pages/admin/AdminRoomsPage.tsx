@@ -336,6 +336,48 @@ const AdminRoomsPage: React.FC = () => {
                       })
                     )}
                   </div>
+
+                  {/* Room Assets Section */}
+                  <div className="room-card__assets-section" style={{ marginTop: '12px', borderTop: '1px solid var(--color-border, rgba(255, 255, 255, 0.07))', paddingTop: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                      📦 Thiết bị phòng:
+                    </div>
+                    {room.assets && room.assets.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {room.assets.map((asset) => {
+                          let statusColor = '#22c55e'; // green (GOOD)
+                          let statusLabel = 'Tốt';
+                          if (asset.status === 'DAMAGED') {
+                            statusColor = '#ef4444'; // red
+                            statusLabel = 'Hỏng';
+                          } else if (asset.status === 'REPAIRING') {
+                            statusColor = '#eab308'; // yellow
+                            statusLabel = 'Đang sửa';
+                          }
+                          return (
+                            <span 
+                              key={asset.id} 
+                              style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                background: 'rgba(255,255,255,0.05)', 
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '2px 6px', 
+                                borderRadius: '4px', 
+                                fontSize: '0.75rem' 
+                              }}
+                              title={`Code: ${asset.code} | Trạng thái: ${statusLabel}`}
+                            >
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor, marginRight: '4px' }} />
+                              {asset.name}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>Chưa gán thiết bị</span>
+                    )}
+                  </div>
                 </div>
               );
             })}

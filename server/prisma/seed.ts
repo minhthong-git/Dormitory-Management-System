@@ -293,7 +293,7 @@ async function main() {
     // Request 1: Pending
     const c1 = activeContracts[0];
     const room1Assets = await prisma.asset.findMany({ where: { roomId: c1.bed.roomId } });
-    const brokenAsset1 = room1Assets.find((a) => a.type === 'AIR_CONDITIONER');
+    const brokenAsset1 = room1Assets.find((a: { type: string; }) => a.type === 'AIR_CONDITIONER');
 
     await prisma.maintenanceRequest.create({
       data: {
@@ -311,7 +311,7 @@ async function main() {
     if (activeContracts.length > 1) {
       const c2 = activeContracts[1];
       const room2Assets = await prisma.asset.findMany({ where: { roomId: c2.bed.roomId } });
-      const brokenAsset2 = room2Assets.find((a) => a.type === 'FAN');
+      const brokenAsset2 = room2Assets.find((a: { type: string; }) => a.type === 'FAN');
 
       await prisma.maintenanceRequest.create({
         data: {
@@ -332,7 +332,7 @@ async function main() {
     if (activeContracts.length > 2) {
       const c3 = activeContracts[2];
       const room3Assets = await prisma.asset.findMany({ where: { roomId: c3.bed.roomId } });
-      const brokenAsset3 = room3Assets.find((a) => a.type === 'CHAIR');
+      const brokenAsset3 = room3Assets.find((a: { type: string; }) => a.type === 'CHAIR');
 
       await prisma.maintenanceRequest.create({
         data: {

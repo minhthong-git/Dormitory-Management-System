@@ -11,6 +11,7 @@ import { prisma } from './config/db';
 import apiRoutes from './routes';
 import { initSocket } from './socket';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { cronService } from './services/cron.service';
 
 // ── App Setup ──────────────────────────────────────────────────
 const app = express();
@@ -51,6 +52,17 @@ const startServer = async () => {
     // Verify DB connection
     await prisma.$connect();
     console.log('[DB] Prisma connected successfully');
+
+    // Run contract & payment checks on startup and every 24 hours
+    cronService.checkContractAndPaymentStatus()
+      .then(res => console.log('[Cron] Initial contract/payment scan completed:', res))
+      .catch(err => console.error('[Cron] Initial scan failed:', err));
+
+    setInterval(() => {
+      cronService.checkContractAndPaymentStatus()
+        .then(res => console.log('[Cron] Daily contract/payment scan completed:', res))
+        .catch(err => console.error('[Cron] Daily scan failed:', err));
+    }, 24 * 60 * 60 * 1000);
 
     httpServer.listen(env.PORT, () => {
       console.log(`\n🚀 Server running on http://localhost:${env.PORT}`);

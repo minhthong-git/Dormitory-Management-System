@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = env("DATABASE_URL")
 }
 
 // ── NOTE: SQL Server không hỗ trợ enum trong Prisma ──────────────
@@ -268,6 +267,7 @@ model MaintenanceRequest {
   description String
   status      String   @default("PENDING")
   priority    String   @default("MEDIUM")
+  damageSeverity String   @default("NORMAL")
   staffId     String?
   notes       String?
   resolvedAt  DateTime?
