@@ -1,52 +1,52 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/config/db';
 import { sendSuccess, sendPaginated } from '@/utils/response';
 import { AppError } from '@/middleware/errorHandler';
 import { notificationService } from '@/services/notification.service';
 
-// ── POST /api/maintenance ──────────────────────────────────────
-// Sinh viên gửi yêu cầu sửa chữa tài sản phòng mình
+// â”€â”€ POST /api/maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Sinh viÃªn gá»­i yÃªu cáº§u sá»­a chá»¯a tÃ i sáº£n phÃ²ng mÃ¬nh
 export const createRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?.sub;
     const { title, description, priority, assetId } = req.body;
 
     if (!title || !description) {
-      throw new AppError('Vui lòng cung cấp tiêu đề và mô tả chi tiết lỗi', 400);
+      throw new AppError('Vui lÃ²ng cung cáº¥p tiÃªu Ä‘á» vÃ  mÃ´ táº£ chi tiáº¿t lá»—i', 400);
     }
 
-    // 1. Tìm Student qua userId
+    // 1. TÃ¬m Student qua userId
     const student = await prisma.student.findUnique({ where: { userId } });
-    if (!student) throw new AppError('Tài khoản sinh viên không tồn tại', 404);
+    if (!student) throw new AppError('TÃ i khoáº£n sinh viÃªn khÃ´ng tá»“n táº¡i', 404);
 
-    // 2. Tìm phòng hiện tại của Student
+    // 2. TÃ¬m phÃ²ng hiá»‡n táº¡i cá»§a Student
     const contract = await prisma.contract.findFirst({
       where: { studentId: student.id, status: 'ACTIVE' },
       include: { bed: true },
     });
     if (!contract || !contract.bed) {
-      throw new AppError('Bạn không thuộc phòng ở hợp lệ hoặc hợp đồng đã hết hiệu lực', 403);
+      throw new AppError('Báº¡n khÃ´ng thuá»™c phÃ²ng á»Ÿ há»£p lá»‡ hoáº·c há»£p Ä‘á»“ng Ä‘Ã£ háº¿t hiá»‡u lá»±c', 403);
     }
 
     const roomId = contract.bed.roomId;
 
-    // 3. Nếu có assetId, kiểm tra xem tài sản đó có thuộc phòng của sinh viên không
+    // 3. Náº¿u cÃ³ assetId, kiá»ƒm tra xem tÃ i sáº£n Ä‘Ã³ cÃ³ thuá»™c phÃ²ng cá»§a sinh viÃªn khÃ´ng
     if (assetId) {
       const asset = await prisma.asset.findFirst({
         where: { id: assetId, roomId },
       });
       if (!asset) {
-        throw new AppError('Tài sản được chọn không thuộc phòng của bạn', 400);
+        throw new AppError('TÃ i sáº£n Ä‘Æ°á»£c chá»n khÃ´ng thuá»™c phÃ²ng cá»§a báº¡n', 400);
       }
 
-      // Tự động chuyển trạng thái tài sản thành DAMAGED khi báo hỏng
+      // Tá»± Ä‘á»™ng chuyá»ƒn tráº¡ng thÃ¡i tÃ i sáº£n thÃ nh DAMAGED khi bÃ¡o há»ng
       await prisma.asset.update({
         where: { id: assetId },
         data: { status: 'DAMAGED' },
       });
     }
 
-    // 4. Tạo yêu cầu sửa chữa
+    // 4. Táº¡o yÃªu cáº§u sá»­a chá»¯a
     const request = await prisma.maintenanceRequest.create({
       data: {
         roomId,
@@ -63,24 +63,24 @@ export const createRequest = async (req: Request, res: Response, next: NextFunct
       },
     });
 
-    // 5. Gửi thông báo thời gian thực đến Staff/Admin
+    // 5. Gá»­i thÃ´ng bÃ¡o thá»i gian thá»±c Ä‘áº¿n Staff/Admin
     await notificationService.sendToStaff({
-      type: 'SYSTEM', // Gửi dưới dạng SYSTEM thông báo bảo trì mới
+      type: 'SYSTEM', // Gá»­i dÆ°á»›i dáº¡ng SYSTEM thÃ´ng bÃ¡o báº£o trÃ¬ má»›i
       priority: (priority as any) || 'MEDIUM',
-      title: `Yêu cầu sửa chữa mới — Phòng ${request.room.roomNumber}`,
-      message: `Sinh viên ${student.fullName} báo sự cố: "${title}". Thiết bị: ${request.asset ? `${request.asset.name} (${request.asset.code})` : 'Khác'}.`,
+      title: `YÃªu cáº§u sá»­a chá»¯a má»›i â€” PhÃ²ng ${request.room.roomNumber}`,
+      message: `Sinh viÃªn ${student.fullName} bÃ¡o sá»± cá»‘: "${title}". Thiáº¿t bá»‹: ${request.asset ? `${request.asset.name} (${request.asset.code})` : 'KhÃ¡c'}.`,
       referenceId: request.id,
       referenceType: 'SYSTEM',
     });
 
-    sendSuccess(res, request, 'Gửi yêu cầu sửa chữa thành công', 201);
+    sendSuccess(res, request, 'Gá»­i yÃªu cáº§u sá»­a chá»¯a thÃ nh cÃ´ng', 201);
   } catch (err) {
     next(err);
   }
 };
 
-// ── GET /api/maintenance/my-requests ───────────────────────────
-// Sinh viên lấy danh sách lịch sử sửa chữa của phòng mình
+// â”€â”€ GET /api/maintenance/my-requests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Sinh viÃªn láº¥y danh sÃ¡ch lá»‹ch sá»­ sá»­a chá»¯a cá»§a phÃ²ng mÃ¬nh
 export const getMyRequests = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?.sub;
@@ -89,7 +89,7 @@ export const getMyRequests = async (req: Request, res: Response, next: NextFunct
     const skip = (page - 1) * limit;
 
     const student = await prisma.student.findUnique({ where: { userId } });
-    if (!student) throw new AppError('Tài khoản sinh viên không tồn tại', 404);
+    if (!student) throw new AppError('TÃ i khoáº£n sinh viÃªn khÃ´ng tá»“n táº¡i', 404);
 
     const where = { studentId: student.id };
 
@@ -107,14 +107,14 @@ export const getMyRequests = async (req: Request, res: Response, next: NextFunct
       prisma.maintenanceRequest.count({ where }),
     ]);
 
-    sendPaginated(res, requests, total, page, limit, 'Lấy lịch sử sửa chữa thành công');
+    sendPaginated(res, requests, total, page, limit, 'Láº¥y lá»‹ch sá»­ sá»­a chá»¯a thÃ nh cÃ´ng');
   } catch (err) {
     next(err);
   }
 };
 
-// ── GET /api/maintenance ───────────────────────────────────────
-// Admin/Staff lấy danh sách tất cả các yêu cầu sửa chữa
+// â”€â”€ GET /api/maintenance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Admin/Staff láº¥y danh sÃ¡ch táº¥t cáº£ cÃ¡c yÃªu cáº§u sá»­a chá»¯a
 export const getAllRequests = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -148,22 +148,22 @@ export const getAllRequests = async (req: Request, res: Response, next: NextFunc
       prisma.maintenanceRequest.count({ where }),
     ]);
 
-    sendPaginated(res, requests, total, page, limit, 'Lấy danh sách yêu cầu bảo trì thành công');
+    sendPaginated(res, requests, total, page, limit, 'Láº¥y danh sÃ¡ch yÃªu cáº§u báº£o trÃ¬ thÃ nh cÃ´ng');
   } catch (err) {
     next(err);
   }
 };
 
-// ── PATCH /api/maintenance/:id/assign ──────────────────────────
-// Phân công Staff chịu trách nhiệm sửa chữa
+// â”€â”€ PATCH /api/maintenance/:id/assign â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PhÃ¢n cÃ´ng Staff chá»‹u trÃ¡ch nhiá»‡m sá»­a chá»¯a
 export const assignStaff = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const { staffId } = req.body;
 
-    if (!staffId) throw new AppError('Vui lòng chọn nhân viên kỹ thuật (Staff)', 400);
+    if (!staffId) throw new AppError('Vui lÃ²ng chá»n nhÃ¢n viÃªn ká»¹ thuáº­t (Staff)', 400);
 
-    // 1. Kiểm tra yêu cầu sửa chữa có tồn tại không
+    // 1. Kiá»ƒm tra yÃªu cáº§u sá»­a chá»¯a cÃ³ tá»“n táº¡i khÃ´ng
     const request = await prisma.maintenanceRequest.findUnique({
       where: { id },
       include: {
@@ -171,15 +171,15 @@ export const assignStaff = async (req: Request, res: Response, next: NextFunctio
         student: { select: { userId: true, fullName: true } },
       },
     });
-    if (!request) throw new AppError('Yêu cầu sửa chữa không tồn tại', 404);
+    if (!request) throw new AppError('YÃªu cáº§u sá»­a chá»¯a khÃ´ng tá»“n táº¡i', 404);
 
-    // 2. Kiểm tra Staff được phân công có tồn tại & có role STAFF/ADMIN không
+    // 2. Kiá»ƒm tra Staff Ä‘Æ°á»£c phÃ¢n cÃ´ng cÃ³ tá»“n táº¡i & cÃ³ role STAFF/ADMIN khÃ´ng
     const staffUser = await prisma.user.findUnique({ where: { id: staffId } });
     if (!staffUser || (staffUser.role !== 'STAFF' && staffUser.role !== 'ADMIN')) {
-      throw new AppError('Nhân viên kỹ thuật không hợp lệ', 400);
+      throw new AppError('NhÃ¢n viÃªn ká»¹ thuáº­t khÃ´ng há»£p lá»‡', 400);
     }
 
-    // 3. Cập nhật yêu cầu
+    // 3. Cáº­p nháº­t yÃªu cáº§u
     const updated = await prisma.maintenanceRequest.update({
       where: { id },
       data: {
@@ -191,51 +191,51 @@ export const assignStaff = async (req: Request, res: Response, next: NextFunctio
       },
     });
 
-    // 4. Gửi thông báo cho sinh viên báo cáo lỗi
+    // 4. Gá»­i thÃ´ng bÃ¡o cho sinh viÃªn bÃ¡o cÃ¡o lá»—i
     if (request.student.userId) {
       await notificationService.send({
         userId: request.student.userId,
         type: 'SYSTEM',
         priority: 'MEDIUM',
-        title: `Phân công sửa chữa — Phòng ${request.room.roomNumber}`,
-        message: `Yêu cầu "${request.title}" của bạn đã được giao cho kỹ thuật viên ${updated.staff?.fullName}.`,
+        title: `PhÃ¢n cÃ´ng sá»­a chá»¯a â€” PhÃ²ng ${request.room.roomNumber}`,
+        message: `YÃªu cáº§u "${request.title}" cá»§a báº¡n Ä‘Ã£ Ä‘Æ°á»£c giao cho ká»¹ thuáº­t viÃªn ${updated.staff?.fullName}.`,
         referenceId: request.id,
         referenceType: 'SYSTEM',
       });
     }
 
-    // 5. Gửi thông báo cho Staff nhận việc
+    // 5. Gá»­i thÃ´ng bÃ¡o cho Staff nháº­n viá»‡c
     await notificationService.send({
       userId: staffId,
       type: 'SYSTEM',
       priority: 'MEDIUM',
-      title: `Nhiệm vụ sửa chữa mới — Phòng ${request.room.roomNumber}`,
-      message: `Bạn được phân công sửa chữa lỗi "${request.title}" tại phòng ${request.room.roomNumber}.`,
+      title: `Nhiá»‡m vá»¥ sá»­a chá»¯a má»›i â€” PhÃ²ng ${request.room.roomNumber}`,
+      message: `Báº¡n Ä‘Æ°á»£c phÃ¢n cÃ´ng sá»­a chá»¯a lá»—i "${request.title}" táº¡i phÃ²ng ${request.room.roomNumber}.`,
       referenceId: request.id,
       referenceType: 'SYSTEM',
     });
 
-    sendSuccess(res, updated, 'Phân công nhân viên sửa chữa thành công');
+    sendSuccess(res, updated, 'PhÃ¢n cÃ´ng nhÃ¢n viÃªn sá»­a chá»¯a thÃ nh cÃ´ng');
   } catch (err) {
     next(err);
   }
 };
 
-// ── PATCH /api/maintenance/:id/status ──────────────────────────
-// Cập nhật tiến độ sửa chữa & ghi chú của Staff
+// â”€â”€ PATCH /api/maintenance/:id/status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Cáº­p nháº­t tiáº¿n Ä‘á»™ sá»­a chá»¯a & ghi chÃº cá»§a Staff
 export const updateRequestStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
 
-    if (!status) throw new AppError('Vui lòng cung cấp trạng thái mới', 400);
+    if (!status) throw new AppError('Vui lÃ²ng cung cáº¥p tráº¡ng thÃ¡i má»›i', 400);
 
     const validStatuses = ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
-      throw new AppError('Trạng thái không hợp lệ', 400);
+      throw new AppError('Tráº¡ng thÃ¡i khÃ´ng há»£p lá»‡', 400);
     }
 
-    // 1. Tìm yêu cầu sửa chữa
+    // 1. TÃ¬m yÃªu cáº§u sá»­a chá»¯a
     const request = await prisma.maintenanceRequest.findUnique({
       where: { id },
       include: {
@@ -243,31 +243,31 @@ export const updateRequestStatus = async (req: Request, res: Response, next: Nex
         student: { select: { userId: true } },
       },
     });
-    if (!request) throw new AppError('Yêu cầu sửa chữa không tồn tại', 404);
+    if (!request) throw new AppError('YÃªu cáº§u sá»­a chá»¯a khÃ´ng tá»“n táº¡i', 404);
 
-    // Kiểm tra quyền: Sinh viên chỉ được phép HỦY (CANCELLED) yêu cầu do chính mình tạo
+    // Kiá»ƒm tra quyá»n: Sinh viÃªn chá»‰ Ä‘Æ°á»£c phÃ©p Há»¦Y (CANCELLED) yÃªu cáº§u do chÃ­nh mÃ¬nh táº¡o
     const userRole = req.user?.role;
     const userId = req.user?.sub;
     if (userRole === 'STUDENT') {
       if (status !== 'CANCELLED') {
-        throw new AppError('Bạn không có quyền chuyển sang trạng thái này. Chỉ nhân viên kỹ thuật mới có quyền xử lý.', 403);
+        throw new AppError('Báº¡n khÃ´ng cÃ³ quyá»n chuyá»ƒn sang tráº¡ng thÃ¡i nÃ y. Chá»‰ nhÃ¢n viÃªn ká»¹ thuáº­t má»›i cÃ³ quyá»n xá»­ lÃ½.', 403);
       }
       if (request.student.userId !== userId) {
-        throw new AppError('Bạn không có quyền chỉnh sửa yêu cầu của người khác', 403);
+        throw new AppError('Báº¡n khÃ´ng cÃ³ quyá»n chá»‰nh sá»­a yÃªu cáº§u cá»§a ngÆ°á»i khÃ¡c', 403);
       }
       if (request.status === 'RESOLVED' || request.status === 'CANCELLED') {
-        throw new AppError('Yêu cầu này đã hoàn thành hoặc đã bị hủy trước đó', 400);
+        throw new AppError('YÃªu cáº§u nÃ y Ä‘Ã£ hoÃ n thÃ nh hoáº·c Ä‘Ã£ bá»‹ há»§y trÆ°á»›c Ä‘Ã³', 400);
       }
     }
 
     const updateData: any = { status };
     if (notes !== undefined) updateData.notes = notes;
 
-    // Nếu hoàn thành, cập nhật thời gian hoàn thành
+    // Náº¿u hoÃ n thÃ nh, cáº­p nháº­t thá»i gian hoÃ n thÃ nh
     if (status === 'RESOLVED') {
       updateData.resolvedAt = new Date();
 
-      // Nếu yêu cầu gắn với tài sản cụ thể, tự động chuyển trạng thái tài sản thành GOOD
+      // Náº¿u yÃªu cáº§u gáº¯n vá»›i tÃ i sáº£n cá»¥ thá»ƒ, tá»± Ä‘á»™ng chuyá»ƒn tráº¡ng thÃ¡i tÃ i sáº£n thÃ nh GOOD
       if (request.assetId) {
         await prisma.asset.update({
           where: { id: request.assetId },
@@ -281,24 +281,46 @@ export const updateRequestStatus = async (req: Request, res: Response, next: Nex
       data: updateData,
     });
 
-    // 2. Gửi thông báo cho Sinh viên cập nhật tình hình sửa chữa
+    // 2. Gá»­i thÃ´ng bÃ¡o cho Sinh viÃªn cáº­p nháº­t tÃ¬nh hÃ¬nh sá»­a chá»¯a
     if (request.student.userId) {
-      let statusLabel = 'Đang xử lý';
-      if (status === 'RESOLVED') statusLabel = 'Đã hoàn thành';
-      if (status === 'CANCELLED') statusLabel = 'Đã bị hủy';
+      let statusLabel = 'Äang xá»­ lÃ½';
+      if (status === 'RESOLVED') statusLabel = 'ÄÃ£ hoÃ n thÃ nh';
+      if (status === 'CANCELLED') statusLabel = 'ÄÃ£ bá»‹ há»§y';
 
       await notificationService.send({
         userId: request.student.userId,
         type: 'SYSTEM',
         priority: 'MEDIUM',
-        title: `Cập nhật trạng thái sửa chữa — Phòng ${request.room.roomNumber}`,
-        message: `Yêu cầu "${request.title}" của bạn hiện ở trạng thái: [${statusLabel}]. ${notes ? `Ghi chú kỹ thuật: "${notes}"` : ''}`,
+        title: `Cáº­p nháº­t tráº¡ng thÃ¡i sá»­a chá»¯a â€” PhÃ²ng ${request.room.roomNumber}`,
+        message: `YÃªu cáº§u "${request.title}" cá»§a báº¡n hiá»‡n á»Ÿ tráº¡ng thÃ¡i: [${statusLabel}]. ${notes ? `Ghi chÃº ká»¹ thuáº­t: "${notes}"` : ''}`,
         referenceId: request.id,
         referenceType: 'SYSTEM',
       });
     }
 
-    sendSuccess(res, updated, 'Cập nhật trạng thái sửa chữa thành công');
+    sendSuccess(res, updated, 'Cáº­p nháº­t tráº¡ng thÃ¡i sá»­a chá»¯a thÃ nh cÃ´ng');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── POST /api/maintenance/:id/rate ─────────────────────────────
+export const rateRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { rating, feedback } = req.body;
+    const request = await prisma.maintenanceRequest.findUnique({
+      where: { id },
+      include: { student: true }
+    });
+    if (!request) throw new AppError('Yêu cầu không tồn tại', 404);
+    if (request.student.userId !== req.user!.sub) throw new AppError('Bạn không có quyền đánh giá', 403);
+    if (request.status !== 'RESOLVED') throw new AppError('Chỉ có thể đánh giá khi đã hoàn thành', 400);
+    const updated = await prisma.maintenanceRequest.update({
+      where: { id },
+      data: { rating, feedback }
+    });
+    sendSuccess(res, updated, 'Đánh giá thành công');
   } catch (err) {
     next(err);
   }

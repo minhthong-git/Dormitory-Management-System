@@ -113,6 +113,18 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
       bedsData.push({ bedNumber: i, bedType: 'STANDARD', status: 'AVAILABLE' });
     }
 
+    // Auto-create basic assets (beds, tables, chairs, wardrobe) based on capacity
+    const assetsData = [];
+    for (let i = 1; i <= finalCapacity; i++) {
+      assetsData.push({ name: `Giường #${i}`, code: `AST-${roomNumber}-BED-${i}`, type: 'BED', status: 'GOOD' });
+      assetsData.push({ name: `Bàn học #${i}`, code: `AST-${roomNumber}-TABLE-${i}`, type: 'TABLE', status: 'GOOD' });
+      assetsData.push({ name: `Ghế #${i}`, code: `AST-${roomNumber}-CHAIR-${i}`, type: 'CHAIR', status: 'GOOD' });
+      assetsData.push({ name: `Tủ quần áo #${i}`, code: `AST-${roomNumber}-WARDROBE-${i}`, type: 'WARDROBE', status: 'GOOD' });
+    }
+    // Also add shared assets
+    assetsData.push({ name: `Điều hòa`, code: `AST-${roomNumber}-AC`, type: 'AC', status: 'GOOD' });
+    assetsData.push({ name: `Quạt trần`, code: `AST-${roomNumber}-FAN`, type: 'FAN', status: 'GOOD' });
+
     const room = await prisma.room.create({
       data: { 
         roomNumber, 
@@ -130,6 +142,12 @@ export const createRoom = async (req: Request, res: Response, next: NextFunction
         }
       },
     });
+
+    // Create assets ( Prisma create with related doesn't easily let you do createMany on a relation without an experimental feature in some versions, so we use createMany on the Asset model directly)
+    await prisma.asset.createMany({
+      data: assetsData.map(asset => ({ ...asset, roomId: room.id }))
+    });
+
     sendSuccess(res, room, 'Tạo phòng thành công', 201);
   } catch (err) {
     next(err);

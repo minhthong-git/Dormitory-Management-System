@@ -3,9 +3,12 @@ import { maintenanceApi, type MaintenanceFilters } from '@/api/maintenance.api';
 import { userApi } from '@/api/user.api';
 import { roomApi } from '@/api/room.api';
 import type { MaintenanceRequest, User, Room } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import './AdminMaintenancePage.css';
+import './AdminRoomsPage.css';
 
 const AdminMaintenancePage: React.FC = () => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [staffList, setStaffList] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -198,6 +201,229 @@ const AdminMaintenancePage: React.FC = () => {
 
   const totalPages = Math.ceil(total / limit);
 
+  if (user?.role === 'STAFF') {
+    return (
+      <div className="admin-page">
+        <header className="admin-header">
+          <div>
+            <h1 className="admin-header__title">Yêu cầu Sửa chữa</h1>
+            <p className="admin-header__subtitle">
+              Theo dõi và cập nhật trạng thái các yêu cầu bảo trì được phân công.
+            </p>
+          </div>
+        </header>
+
+        <div className="admin-content">
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+            {[
+              { id: 'ALL', label: 'Tất cả' },
+              { id: 'PENDING', label: 'Chờ xử lý' },
+              { id: 'ASSIGNED', label: 'Đã phân công' },
+              { id: 'IN_PROGRESS', label: 'Đang sửa chữa' },
+              { id: 'RESOLVED', label: 'Đã hoàn thành' },
+              { id: 'CANCELLED', label: 'Đã hủy' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                style={{
+                  background: 'none', border: 'none', padding: '0.75rem 1rem', cursor: 'pointer',
+                  color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  borderBottom: activeTab === tab.id ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  fontWeight: activeTab === tab.id ? 600 : 400
+                }}
+                onClick={() => handleTabChange(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Filters Control Panel */}
+          <div className="student-controls" style={{ marginBottom: '1.5rem', background: 'transparent', padding: 0 }}>
+            <div className="student-filters">
+              <div className="form-group student-select-filter">
+                <select
+                  value={filterPriority}
+                  onChange={e => { setFilterPriority(e.target.value); setPage(1); }}
+                >
+                  <option value="">Độ ưu tiên (Tất cả)</option>
+                  <option value="LOW">Thấp</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HIGH">Cao</option>
+                  <option value="URGENT">Khẩn cấp</option>
+                </select>
+              </div>
+
+              <div className="form-group student-select-filter">
+                <select
+                  value={filterRoomId}
+                  onChange={e => { setFilterRoomId(e.target.value); setPage(1); }}
+                >
+                  <option value="">Phòng (Tất cả)</option>
+                  {rooms.map(room => (
+                    <option key={room.id} value={room.id}>
+                      Phòng {room.roomNumber} ({room.building?.name || 'Khu A'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {(filterPriority || filterRoomId || filterStaffId || activeTab !== 'ALL') && (
+                <button className="btn btn-outline" onClick={() => { handleResetFilters(); setActiveTab('ALL'); }}>
+                  Xóa lọc
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Requests Table */}
+          <section className="data-table-container">
+            {isLoading ? (
+              <div className="loading-screen" style={{ minHeight: '40vh' }}>
+                <div className="spinner" />
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="empty-state" style={{ padding: '6rem 2rem', textAlign: 'center' }}>
+                <span style={{ fontSize: '3rem' }}>🔧</span>
+                <h3 style={{ marginTop: '1rem', color: 'var(--color-text)' }}>Không có yêu cầu sửa chữa nào</h3>
+                <p style={{ color: 'var(--color-text-muted)' }}>Hệ thống không ghi nhận báo cáo sự cố nào khớp với bộ lọc.</p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Phòng</th>
+                      <th>Sinh viên báo</th>
+                      <th>Thiết bị</th>
+                      <th>Sự cố</th>
+                      <th>Ưu tiên</th>
+                      <th>Trạng thái</th>
+                      <th style={{ width: '120px' }}>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map(ticket => (
+                      <tr key={ticket.id}>
+                        <td><strong>Phòng {ticket.room?.roomNumber || 'Chưa rõ'}</strong></td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{ticket.student?.fullName}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{ticket.student?.phone || 'Không có số'}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{formatDateTime(ticket.createdAt)}</div>
+                        </td>
+                        <td>
+                          {ticket.asset ? (
+                            <>
+                              <div style={{ fontWeight: 500 }}>{ticket.asset.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{ticket.asset.code}</div>
+                            </>
+                          ) : 'Cơ sở vật chất phòng'}
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{ticket.title}</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={ticket.description}>
+                            {ticket.description}
+                          </div>
+                          {ticket.notes && (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', marginTop: '4px' }}>
+                              ✍️ {ticket.notes}
+                            </div>
+                          )}
+                          {(ticket as any).rating && (
+                            <div style={{ fontSize: '0.8rem', color: '#fbbf24', marginTop: '2px' }}>
+                              Đánh giá: {'★'.repeat((ticket as any).rating)}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`badge badge--${ticket.priority.toLowerCase()}`}>
+                            {priorityLabel[ticket.priority] || ticket.priority}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge badge--${ticket.status.toLowerCase()}`}>
+                            {statusLabel[ticket.status]}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="action-buttons" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {ticket.status === 'ASSIGNED' && (
+                              <button className="btn btn-success btn-sm" onClick={() => handleStartRepairing(ticket.id)}>Bắt đầu</button>
+                            )}
+                            {ticket.status === 'IN_PROGRESS' && (
+                              <button className="btn btn-success btn-sm" onClick={() => openStatusModal(ticket, 'RESOLVED')}>Hoàn tất</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="pagination" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+              <button className="btn btn-outline btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                Trước
+              </button>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Trang {page} / {totalPages} (Tổng số {total})</span>
+              <button className="btn btn-outline btn-sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+                Sau
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Modal: Cập nhật trạng thái (Hoàn thành / Hủy) */}
+        {isStatusModalOpen && selectedTicket && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <button className="modal-close" onClick={() => setIsStatusModalOpen(false)}>×</button>
+              <h2 className="modal-title">
+                {newStatus === 'RESOLVED' ? 'Xác nhận Hoàn thành' : 'Hủy Yêu cầu'}
+              </h2>
+              <p style={{ marginBottom: '1rem', color: 'var(--color-text-muted)' }}>
+                Yêu cầu: <strong>{selectedTicket.title}</strong> - Phòng {selectedTicket.room?.roomNumber}
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  const response = await maintenanceApi.updateStatus(selectedTicket.id, { status: newStatus, notes: techNotes });
+                  if (response.data.success) {
+                    alert('Cập nhật trạng thái thành công!');
+                    setIsStatusModalOpen(false);
+                    fetchTickets();
+                  }
+                } catch (err: any) {
+                  alert(err.response?.data?.message || 'Có lỗi xảy ra.');
+                }
+              }}>
+                <div className="form-group">
+                  <label>Ghi chú kỹ thuật (Tùy chọn)</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={techNotes}
+                    onChange={e => setTechNotes(e.target.value)}
+                    placeholder="Ghi chú về việc sửa chữa (đã thay thế linh kiện gì, lý do hủy...)"
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn btn-outline" onClick={() => setIsStatusModalOpen(false)}>Đóng</button>
+                  <button type="submit" className={newStatus === 'RESOLVED' ? 'btn btn-success' : 'btn btn-danger'}>Xác nhận</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="maint-page">
       <header className="maint-page__header">
@@ -250,17 +476,14 @@ const AdminMaintenancePage: React.FC = () => {
       </section>
 
       {/* Filters Control Panel */}
-      <section className="assets-page__control-card" style={{ marginBottom: '1.5rem' }}>
-        <div className="assets-page__filters">
-          <div className="filter-input-group">
-            <label htmlFor="filter-priority">Độ ưu tiên</label>
+      <div className="student-controls" style={{ marginBottom: '1.5rem', background: 'transparent', padding: 0 }}>
+        <div className="student-filters">
+          <div className="form-group student-select-filter">
             <select
-              id="filter-priority"
-              className="filter-control"
               value={filterPriority}
               onChange={e => { setFilterPriority(e.target.value); setPage(1); }}
             >
-              <option value="">Tất cả độ ưu tiên</option>
+              <option value="">Độ ưu tiên (Tất cả)</option>
               <option value="LOW">Thấp</option>
               <option value="MEDIUM">Trung bình</option>
               <option value="HIGH">Cao</option>
@@ -268,15 +491,12 @@ const AdminMaintenancePage: React.FC = () => {
             </select>
           </div>
 
-          <div className="filter-input-group">
-            <label htmlFor="filter-roomId">Phòng</label>
+          <div className="form-group student-select-filter">
             <select
-              id="filter-roomId"
-              className="filter-control"
               value={filterRoomId}
               onChange={e => { setFilterRoomId(e.target.value); setPage(1); }}
             >
-              <option value="">Tất cả phòng</option>
+              <option value="">Phòng (Tất cả)</option>
               {rooms.map(room => (
                 <option key={room.id} value={room.id}>
                   Phòng {room.roomNumber} ({room.building?.name || 'Khu A'})
@@ -285,15 +505,12 @@ const AdminMaintenancePage: React.FC = () => {
             </select>
           </div>
 
-          <div className="filter-input-group">
-            <label htmlFor="filter-staffId">Kỹ thuật viên</label>
+          <div className="form-group student-select-filter">
             <select
-              id="filter-staffId"
-              className="filter-control"
               value={filterStaffId}
               onChange={e => { setFilterStaffId(e.target.value); setPage(1); }}
             >
-              <option value="">Tất cả nhân viên</option>
+              <option value="">Kỹ thuật viên (Tất cả)</option>
               {staffList.map(staff => (
                 <option key={staff.id} value={staff.id}>
                   {staff.fullName}
@@ -301,17 +518,13 @@ const AdminMaintenancePage: React.FC = () => {
               ))}
             </select>
           </div>
-
-          {(filterPriority || filterRoomId || filterStaffId) && (
-            <div className="filter-input-group" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn btn-outline" onClick={handleResetFilters}>
-                Xóa lọc
-              </button>
-            </div>
+          {(filterPriority || filterRoomId || filterStaffId || activeTab !== 'ALL') && (
+            <button className="btn btn-outline" onClick={() => { handleResetFilters(); setActiveTab('ALL'); }}>
+              Xóa lọc
+            </button>
           )}
         </div>
-      </section>
-
+      </div>
       {/* Requests Grid */}
       {isLoading ? (
         <div className="loading-screen" style={{ minHeight: '40vh' }}>

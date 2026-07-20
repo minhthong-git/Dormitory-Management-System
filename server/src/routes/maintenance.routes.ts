@@ -6,6 +6,7 @@ import {
   getAllRequests,
   assignStaff,
   updateRequestStatus,
+  rateRequest,
 } from '@/controllers/maintenance.controller';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.use(verifyJWT);
 // Sinh viên báo sự cố & xem danh sách của mình
 router.post('/', requireRoles('STUDENT'), createRequest);
 router.get('/my-requests', requireRoles('STUDENT'), getMyRequests);
+router.post('/:id/rate', requireRoles('STUDENT'), rateRequest);
 
 // Quản lý xem toàn bộ sự cố trong ký túc xá
 router.get('/', requireRoles('ADMIN', 'STAFF'), getAllRequests);

@@ -32,4 +32,7 @@ export const maintenanceApi = {
 
   updateStatus: (id: string, data: { status: string; notes?: string }) =>
     axiosClient.patch<ApiResponse<MaintenanceRequest>>(`/maintenance/${id}/status`, data),
+
+  rate: (id: string, data: { rating: number; feedback?: string }) =>
+    axiosClient.post<ApiResponse<MaintenanceRequest>>(`/maintenance/${id}/rate`, data),
 };
