@@ -166,6 +166,7 @@ async function main() {
       assets.push(fan);
     }
 
+<<<<<<< HEAD
     // 4 Light bulbs
     for (let j = 1; j <= 4; j++) {
       const light = await prisma.asset.create({
@@ -197,19 +198,71 @@ async function main() {
     }
 
     // 4 Power sockets
+=======
+    // Lightbulbs (Bóng đèn)
+    for (let j = 1; j <= 4; j++) {
+      const lb = await prisma.asset.create({
+        data: {
+          name: 'Bóng đèn',
+          code: `LB-${room.roomNumber}-0${j}`,
+          type: 'LIGHTBULB',
+          status: 'GOOD',
+          description: 'Bóng đèn LED Philips 15W',
+          roomId: room.id,
+        },
+      });
+      assets.push(lb);
+    }
+
+    // Locker (Tủ locker)
+    const locker = await prisma.asset.create({
+      data: {
+        name: 'Tủ locker',
+        code: `LK-${room.roomNumber}-01`,
+        type: 'LOCKER',
+        status: 'GOOD',
+        description: 'Tủ locker sắt 4 ngăn Hòa Phát',
+        roomId: room.id,
+      },
+    });
+    assets.push(locker);
+
+    // Water tap (Vòi nước)
+    const tap = await prisma.asset.create({
+      data: {
+        name: 'Vòi nước',
+        code: `WT-${room.roomNumber}-01`,
+        type: 'WATER_TAP',
+        status: 'GOOD',
+        description: 'Vòi nước inox 304',
+        roomId: room.id,
+      },
+    });
+    assets.push(tap);
+
+    // Electrical sockets (Ổ điện)
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
     for (let j = 1; j <= 4; j++) {
       const socket = await prisma.asset.create({
         data: {
           name: 'Ổ điện',
+<<<<<<< HEAD
           code: `SK-${room.roomNumber}-0${j}`,
           type: 'POWER_SOCKET',
           status: 'GOOD',
           description: 'Ổ cắm điện đôi âm tường',
+=======
+          code: `SO-${room.roomNumber}-0${j}`,
+          type: 'POWER_SOCKET',
+          status: 'GOOD',
+          description: 'Ổ cắm điện âm tường Sino',
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
           roomId: room.id,
         },
       });
       assets.push(socket);
     }
+<<<<<<< HEAD
 
     // 2 Water faucets
     for (let j = 1; j <= 2; j++) {
@@ -225,6 +278,8 @@ async function main() {
       });
       assets.push(faucet);
     }
+=======
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
   }
   console.log(`✅ Created ${assets.length} assets.`);
 

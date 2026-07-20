@@ -24,6 +24,10 @@ const MaintenanceRequestPage: React.FC = () => {
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [selectedAssetId, setSelectedAssetId] = useState(initialAssetId);
 
+  // Rating & Feedback State
+  const [feedbackState, setFeedbackState] = useState<Record<string, { rating: number; feedback: string }>>({});
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<Record<string, boolean>>({});
+
   // Fetch student's room assets & reported tickets
   const fetchRoomInfoAndTickets = useCallback(async () => {
     setIsLoading(true);
@@ -82,6 +86,38 @@ const MaintenanceRequestPage: React.FC = () => {
       alert(err.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Submit feedback rating
+  const handleSubmitFeedback = async (ticketId: string) => {
+    const input = feedbackState[ticketId];
+    if (!input || !input.rating) {
+      alert('Vui lòng chọn số sao đánh giá (1-5 sao).');
+      return;
+    }
+
+    setIsSubmittingFeedback(prev => ({ ...prev, [ticketId]: true }));
+    try {
+      const response = await maintenanceApi.submitFeedback(ticketId, {
+        rating: input.rating,
+        feedback: input.feedback?.trim() || undefined,
+      });
+      if (response.data.success) {
+        alert('Gửi đánh giá chất lượng thành công! Cảm ơn bạn đã phản hồi.');
+        // Clear state for this ticket
+        setFeedbackState(prev => {
+          const next = { ...prev };
+          delete next[ticketId];
+          return next;
+        });
+        fetchRoomInfoAndTickets();
+      }
+    } catch (err: any) {
+      console.error('Lỗi gửi đánh giá:', err);
+      alert(err.response?.data?.message || 'Có lỗi xảy ra khi gửi đánh giá.');
+    } finally {
+      setIsSubmittingFeedback(prev => ({ ...prev, [ticketId]: false }));
     }
   };
 
@@ -282,6 +318,101 @@ const MaintenanceRequestPage: React.FC = () => {
                       {ticket.resolvedAt && (
                         <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px' }}>
                           Hoàn thành lúc: {formatDateTime(ticket.resolvedAt)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {ticket.status === 'RESOLVED' && (
+                    <div className="student-ticket__feedback-section">
+                      {ticket.rating ? (
+                        <div className="student-ticket__feedback-view">
+                          <div className="feedback-stars">
+                            <span className="feedback-stars__label">Đánh giá của bạn:</span>
+                            <div className="stars-row">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <svg
+                                  key={star}
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill={star <= (ticket.rating || 0) ? "#f59e0b" : "none"}
+                                  stroke={star <= (ticket.rating || 0) ? "#f59e0b" : "#64748b"}
+                                  strokeWidth="2"
+                                  className="star-icon star-icon--readonly"
+                                >
+                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {ticket.feedback && (
+                            <p className="feedback-text-content">"{ticket.feedback}"</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="student-ticket__feedback-form">
+                          <div className="feedback-stars-input">
+                            <span className="feedback-stars__label">Đánh giá chất lượng sửa chữa:</span>
+                            <div className="stars-row">
+                              {[1, 2, 3, 4, 5].map(star => {
+                                const currentRating = feedbackState[ticket.id]?.rating || 0;
+                                return (
+                                  <button
+                                    type="button"
+                                    key={star}
+                                    className="star-button"
+                                    onClick={() => setFeedbackState(prev => ({
+                                      ...prev,
+                                      [ticket.id]: {
+                                        ...(prev[ticket.id] || { feedback: '' }),
+                                        rating: star
+                                      }
+                                    }))}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill={star <= currentRating ? "#f59e0b" : "none"}
+                                      stroke={star <= currentRating ? "#f59e0b" : "#64748b"}
+                                      strokeWidth="2"
+                                      className="star-icon star-icon--interactive"
+                                    >
+                                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                    </svg>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="feedback-comment-input">
+                            <textarea
+                              className="feedback-textarea"
+                              placeholder="Nhập ý kiến đánh giá (tối đa 200 chữ)..."
+                              maxLength={200}
+                              value={feedbackState[ticket.id]?.feedback || ''}
+                              onChange={e => setFeedbackState(prev => ({
+                                ...prev,
+                                [ticket.id]: {
+                                  ...(prev[ticket.id] || { rating: 0 }),
+                                  feedback: e.target.value
+                                }
+                              }))}
+                              disabled={isSubmittingFeedback[ticket.id]}
+                            />
+                            <div className="feedback-textarea-footer">
+                              <span className="char-counter">
+                                {(feedbackState[ticket.id]?.feedback || '').length}/200
+                              </span>
+                              <button
+                                type="button"
+                                className="btn-submit-feedback"
+                                onClick={() => handleSubmitFeedback(ticket.id)}
+                                disabled={isSubmittingFeedback[ticket.id] || !(feedbackState[ticket.id]?.rating)}
+                              >
+                                {isSubmittingFeedback[ticket.id] ? 'Đang gửi...' : 'Gửi Đánh giá'}
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

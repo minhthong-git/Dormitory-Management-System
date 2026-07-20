@@ -33,6 +33,11 @@ export const maintenanceApi = {
   updateStatus: (id: string, data: { status: string; notes?: string }) =>
     axiosClient.patch<ApiResponse<MaintenanceRequest>>(`/maintenance/${id}/status`, data),
 
+<<<<<<< HEAD
   rate: (id: string, data: { rating: number; feedback?: string }) =>
     axiosClient.post<ApiResponse<MaintenanceRequest>>(`/maintenance/${id}/rate`, data),
+=======
+  submitFeedback: (id: string, data: { rating: number; feedback?: string }) =>
+    axiosClient.post<ApiResponse<MaintenanceRequest>>(`/maintenance/${id}/feedback`, data),
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
 };

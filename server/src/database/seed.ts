@@ -13,7 +13,12 @@ async function main() {
   await prisma.maintenanceRequest.deleteMany({});
   await prisma.asset.deleteMany({});
   await prisma.notification.deleteMany({});
+<<<<<<< HEAD
   await prisma.paymentTransaction.deleteMany({});
+=======
+  await prisma.maintenanceRequest.deleteMany({});
+  await prisma.asset.deleteMany({});
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
   await prisma.invoice.deleteMany({});
   await prisma.utilityReading.deleteMany({});
   await prisma.transferHistory.deleteMany({});
@@ -120,6 +125,7 @@ async function main() {
   }
   console.log(`✅ Created ${beds.length} beds.`);
 
+<<<<<<< HEAD
   // 4.5 Create Assets for Rooms
   console.log('📺 Creating assets...');
   let assetCount = 0;
@@ -232,6 +238,127 @@ async function main() {
     }
   }
   console.log(`✅ Created ${assetCount} assets.`);
+=======
+  // 4.1 Create Assets for each room
+  console.log('📦 Creating assets for rooms...');
+  const assets = [];
+  for (const room of rooms) {
+    // Air Conditioner
+    const ac = await prisma.asset.create({
+      data: {
+        name: 'Máy lạnh',
+        code: `AC-${room.roomNumber}-01`,
+        type: 'AIR_CONDITIONER',
+        status: 'GOOD',
+        description: 'Máy lạnh LG 1.5 HP Inverter',
+        roomId: room.id,
+      },
+    });
+    assets.push(ac);
+
+    // Desks
+    for (let j = 1; j <= 4; j++) {
+      const desk = await prisma.asset.create({
+        data: {
+          name: 'Bàn học',
+          code: `DK-${room.roomNumber}-0${j}`,
+          type: 'DESK',
+          status: 'GOOD',
+          description: 'Bàn học gỗ công nghiệp',
+          roomId: room.id,
+        },
+      });
+      assets.push(desk);
+    }
+
+    // Chairs
+    for (let j = 1; j <= 4; j++) {
+      const chair = await prisma.asset.create({
+        data: {
+          name: 'Ghế',
+          code: `CH-${room.roomNumber}-0${j}`,
+          type: 'CHAIR',
+          status: 'GOOD',
+          description: 'Ghế tựa nhựa Hòa Phát',
+          roomId: room.id,
+        },
+      });
+      assets.push(chair);
+    }
+
+    // Fans
+    for (let j = 1; j <= 2; j++) {
+      const fan = await prisma.asset.create({
+        data: {
+          name: 'Quạt',
+          code: `FN-${room.roomNumber}-0${j}`,
+          type: 'FAN',
+          status: 'GOOD',
+          description: 'Quạt treo tường Senko',
+          roomId: room.id,
+        },
+      });
+      assets.push(fan);
+    }
+
+    // Lightbulbs (Bóng đèn)
+    for (let j = 1; j <= 4; j++) {
+      const lb = await prisma.asset.create({
+        data: {
+          name: 'Bóng đèn',
+          code: `LB-${room.roomNumber}-0${j}`,
+          type: 'LIGHTBULB',
+          status: 'GOOD',
+          description: 'Bóng đèn LED Philips 15W',
+          roomId: room.id,
+        },
+      });
+      assets.push(lb);
+    }
+
+    // Locker (Tủ locker)
+    const locker = await prisma.asset.create({
+      data: {
+        name: 'Tủ locker',
+        code: `LK-${room.roomNumber}-01`,
+        type: 'LOCKER',
+        status: 'GOOD',
+        description: 'Tủ locker sắt 4 ngăn Hòa Phát',
+        roomId: room.id,
+      },
+    });
+    assets.push(locker);
+
+    // Water tap (Vòi nước)
+    const tap = await prisma.asset.create({
+      data: {
+        name: 'Vòi nước',
+        code: `WT-${room.roomNumber}-01`,
+        type: 'WATER_TAP',
+        status: 'GOOD',
+        description: 'Vòi nước inox 304',
+        roomId: room.id,
+      },
+    });
+    assets.push(tap);
+
+    // Electrical sockets (Ổ điện)
+    for (let j = 1; j <= 4; j++) {
+      const socket = await prisma.asset.create({
+        data: {
+          name: 'Ổ điện',
+          code: `SO-${room.roomNumber}-0${j}`,
+          type: 'POWER_SOCKET',
+          status: 'GOOD',
+          description: 'Ổ cắm điện âm tường Sino',
+          roomId: room.id,
+        },
+      });
+      assets.push(socket);
+    }
+  }
+  console.log(`✅ Created ${assets.length} assets.`);
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
 
   // 5. Create 20 Student Users and Student profiles
   console.log('👥 Creating student accounts & profiles...');

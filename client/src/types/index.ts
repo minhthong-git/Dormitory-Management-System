@@ -212,6 +212,8 @@ export interface MaintenanceRequest {
   staffId?: string;
   notes?: string;
   resolvedAt?: string;
+  rating?: number;
+  feedback?: string;
   createdAt: string;
   updatedAt: string;
   room?: { roomNumber: string };

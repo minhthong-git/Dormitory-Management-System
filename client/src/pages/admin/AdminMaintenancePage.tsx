@@ -4,11 +4,25 @@ import { userApi } from '@/api/user.api';
 import { roomApi } from '@/api/room.api';
 import type { MaintenanceRequest, User, Room } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+<<<<<<< HEAD
+=======
+import { useNotifications } from '@/context/NotificationContext';
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
 import './AdminMaintenancePage.css';
 import './AdminRoomsPage.css';
 
 const AdminMaintenancePage: React.FC = () => {
   const { user } = useAuth();
+<<<<<<< HEAD
+=======
+  const { notifications, markAsRead } = useNotifications();
+
+  // Lọc các thông báo đánh giá bảo trì chưa đọc
+  const feedbackNotifications = notifications.filter(
+    notif => !notif.isRead && 
+    (notif.title.includes('Đánh giá sửa chữa') || notif.message.includes('đã đánh giá'))
+  );
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [staffList, setStaffList] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -435,6 +449,28 @@ const AdminMaintenancePage: React.FC = () => {
         </div>
       </header>
 
+      {/* Hiển thị các thông báo phản hồi và đánh giá từ sinh viên */}
+      {feedbackNotifications.length > 0 && (
+        <section className="maint-alerts-section">
+          {feedbackNotifications.map(notif => (
+            <div key={notif.id} className="maint-alert-card">
+              <div className="maint-alert-card__icon">⭐</div>
+              <div className="maint-alert-card__body">
+                <h4 className="maint-alert-card__title">{notif.title}</h4>
+                <p className="maint-alert-card__message">{notif.message}</p>
+              </div>
+              <button 
+                type="button"
+                className="maint-alert-card__btn" 
+                onClick={() => markAsRead(notif.id)}
+              >
+                Đã xem
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
+
       {/* Tabs */}
       <section className="maint-tabs">
         <button
@@ -580,23 +616,58 @@ const AdminMaintenancePage: React.FC = () => {
                   </div>
                   
                   {ticket.notes && (
-                    <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', marginTop: '6px', fontSize: '0.75rem', borderLeft: '3px solid #cbd5e1' }}>
+                    <div style={{ background: '#f8fafc', padding: '8px', borderRadius: '8px', marginTop: '6px', fontSize: '0.75rem', borderLeft: '3px solid #cbd5e1', color: '#1e293b' }}>
                       <strong>Nhân viên ghi chú:</strong> "{ticket.notes}"
+                    </div>
+                  )}
+
+                  {ticket.rating && (
+                    <div style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '8px', borderRadius: '8px', marginTop: '6px', fontSize: '0.75rem', border: '1px solid rgba(245, 158, 11, 0.25)', color: '#b45309' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <strong style={{ fontWeight: '800', color: '#b45309' }}>Đánh giá của sinh viên:</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <svg
+                              key={star}
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill={star <= (ticket.rating || 0) ? "#f59e0b" : "none"}
+                              stroke={star <= (ticket.rating || 0) ? "#f59e0b" : "rgba(245, 158, 11, 0.4)"}
+                              strokeWidth="2.5"
+                              style={{ width: '12px', height: '12px' }}
+                            >
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                      {ticket.feedback && (
+                        <div style={{ marginTop: '4px', fontStyle: 'italic', color: '#78350f', fontWeight: '700', wordBreak: 'break-word' }}>
+                          "{ticket.feedback}"
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Actions inside Card */}
                   <div className="ticket-card__actions">
                     {ticket.status === 'PENDING' && (
-                      <button
-                        className="btn-card btn-card--primary"
-                        onClick={() => openAssignModal(ticket)}
-                      >
-                        Giao việc
-                      </button>
+                      user?.role === 'ADMIN' ? (
+                        <button
+                          className="btn-card btn-card--primary"
+                          onClick={() => openAssignModal(ticket)}
+                        >
+                          Giao việc
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', textAlign: 'center', width: '100%', display: 'block', padding: '4px 0' }}>
+                          Chờ Admin phân công
+                        </span>
+                      )
                     )}
 
                     {ticket.status === 'ASSIGNED' && (
+<<<<<<< HEAD
                       <button
                         className="btn-card btn-card--outline"
                         style={{ width: '100%' }}
@@ -604,22 +675,54 @@ const AdminMaintenancePage: React.FC = () => {
                       >
                         Đổi người
                       </button>
+=======
+                      <>
+                        {/* Staff được phân công mới thấy nút Bắt đầu sửa */}
+                        {user?.role === 'STAFF' && ticket.staffId === user.id && (
+                          <button
+                            className="btn-card btn-card--secondary"
+                            onClick={() => handleStartRepairing(ticket.id)}
+                            style={{ width: '100%' }}
+                          >
+                            Bắt đầu sửa
+                          </button>
+                        )}
+                        {/* Chỉ Admin mới được đổi người phân công */}
+                        {user?.role === 'ADMIN' && (
+                          <button
+                            className="btn-card btn-card--outline"
+                            onClick={() => openAssignModal(ticket)}
+                            style={{ width: '100%' }}
+                          >
+                            Đổi người
+                          </button>
+                        )}
+                      </>
+>>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
                     )}
 
                     {ticket.status === 'IN_PROGRESS' && (
                       <>
-                        <button
-                          className="btn-card btn-card--success"
-                          onClick={() => openStatusModal(ticket, 'RESOLVED')}
-                        >
-                          Hoàn thành
-                        </button>
-                        <button
-                          className="btn-card btn-card--outline"
-                          onClick={() => openStatusModal(ticket, 'CANCELLED')}
-                        >
-                          Hủy yêu cầu
-                        </button>
+                        {(user?.role === 'ADMIN' || (user?.role === 'STAFF' && ticket.staffId === user.id)) ? (
+                          <>
+                            <button
+                              className="btn-card btn-card--success"
+                              onClick={() => openStatusModal(ticket, 'RESOLVED')}
+                            >
+                              Hoàn thành
+                            </button>
+                            <button
+                              className="btn-card btn-card--outline"
+                              onClick={() => openStatusModal(ticket, 'CANCELLED')}
+                            >
+                              Hủy yêu cầu
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b', textAlign: 'center', width: '100%', display: 'block', padding: '4px 0' }}>
+                            Đang sửa chữa bởi {ticket.staff?.fullName || 'nhân viên khác'}
+                          </span>
+                        )}
                       </>
                     )}
 
