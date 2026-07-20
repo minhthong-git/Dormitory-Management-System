@@ -56,7 +56,8 @@ export interface Room {
   description?: string;
   createdAt: string;
   updatedAt: string;
-  building?: { name: string };
+  buildingId?: string;
+  building?: { name: string, id?: string };
   beds?: Bed[];
 }
 
@@ -196,7 +197,8 @@ export interface Asset {
   updatedAt: string;
   room?: {
     roomNumber: string;
-    building?: { name: string };
+    buildingId?: string;
+  building?: { name: string, id?: string };
   };
 }
 

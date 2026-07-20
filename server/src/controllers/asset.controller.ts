@@ -15,11 +15,15 @@ export const getAssets = async (req: Request, res: Response, next: NextFunction)
     const status = req.query.status as string | undefined;
     const type = req.query.type as string | undefined;
     const search = req.query.search as string | undefined;
+    const buildingId = req.query.buildingId as string | undefined;
 
     const where: any = {};
     if (roomId) where.roomId = roomId;
     if (status) where.status = status;
     if (type) where.type = type;
+    if (buildingId) {
+      where.room = { buildingId };
+    }
     if (search) {
       where.OR = [
         { name: { contains: search } },

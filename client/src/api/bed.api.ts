@@ -5,6 +5,7 @@ export interface BedFilters {
   page?: number;
   limit?: number;
   roomId?: string;
+  buildingId?: string;
   status?: string;
 }
 
