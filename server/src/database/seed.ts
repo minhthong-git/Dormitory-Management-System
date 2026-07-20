@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
+declare const process: any;
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -168,6 +170,66 @@ async function main() {
       });
       assetCount += 2;
     }
+
+    // 4 Light bulbs
+    for (let i = 1; i <= 4; i++) {
+      await prisma.asset.create({
+        data: {
+          roomId: room.id,
+          code: `LT-${room.roomNumber}-${i.toString().padStart(2, '0')}`,
+          name: 'Bóng đèn',
+          type: 'LIGHT',
+          status: 'GOOD',
+          description: 'Bóng đèn tuýp LED 1.2m 20W',
+        }
+      });
+      assetCount++;
+    }
+
+    // 4 Lockers
+    for (let i = 1; i <= 4; i++) {
+      await prisma.asset.create({
+        data: {
+          roomId: room.id,
+          code: `LK-${room.roomNumber}-${i.toString().padStart(2, '0')}`,
+          name: 'Tủ locker',
+          type: 'LOCKER',
+          status: 'GOOD',
+          description: 'Tủ locker cá nhân có khóa',
+        }
+      });
+      assetCount++;
+    }
+
+    // 4 Power sockets
+    for (let i = 1; i <= 4; i++) {
+      await prisma.asset.create({
+        data: {
+          roomId: room.id,
+          code: `SK-${room.roomNumber}-${i.toString().padStart(2, '0')}`,
+          name: 'Ổ điện',
+          type: 'POWER_SOCKET',
+          status: 'GOOD',
+          description: 'Ổ cắm điện đôi âm tường',
+        }
+      });
+      assetCount++;
+    }
+
+    // 2 Water faucets
+    for (let i = 1; i <= 2; i++) {
+      await prisma.asset.create({
+        data: {
+          roomId: room.id,
+          code: `FC-${room.roomNumber}-${i.toString().padStart(2, '0')}`,
+          name: 'Vòi nước',
+          type: 'FAUCET',
+          status: 'GOOD',
+          description: 'Vòi nước inox 304',
+        }
+      });
+      assetCount++;
+    }
   }
   console.log(`✅ Created ${assetCount} assets.`);
 
@@ -246,7 +308,7 @@ async function main() {
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 6);
 
-    const contract = await prisma.contract.create({
+    await prisma.contract.create({
       data: {
         studentId: student.id,
         bedId: bed.id,
@@ -328,7 +390,7 @@ async function main() {
         await prisma.paymentTransaction.create({
           data: {
             invoiceId: invoice.id,
-            userId: students[0].userId, // just use the first student as the payer
+            userId: students[0].userId!, // just use the first student as the payer
             amount: totalAmount,
             provider: 'PAYOS',
             providerTransactionId: `TXN-${invoice.id.substring(0,8).toUpperCase()}`,

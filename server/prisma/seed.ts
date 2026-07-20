@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
+declare const process: any;
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -162,6 +164,66 @@ async function main() {
         },
       });
       assets.push(fan);
+    }
+
+    // 4 Light bulbs
+    for (let j = 1; j <= 4; j++) {
+      const light = await prisma.asset.create({
+        data: {
+          name: 'Bóng đèn',
+          code: `LT-${room.roomNumber}-0${j}`,
+          type: 'LIGHT',
+          status: 'GOOD',
+          description: 'Bóng đèn tuýp LED 1.2m 20W',
+          roomId: room.id,
+        },
+      });
+      assets.push(light);
+    }
+
+    // 4 Lockers
+    for (let j = 1; j <= 4; j++) {
+      const locker = await prisma.asset.create({
+        data: {
+          name: 'Tủ locker',
+          code: `LK-${room.roomNumber}-0${j}`,
+          type: 'LOCKER',
+          status: 'GOOD',
+          description: 'Tủ locker cá nhân có khóa',
+          roomId: room.id,
+        },
+      });
+      assets.push(locker);
+    }
+
+    // 4 Power sockets
+    for (let j = 1; j <= 4; j++) {
+      const socket = await prisma.asset.create({
+        data: {
+          name: 'Ổ điện',
+          code: `SK-${room.roomNumber}-0${j}`,
+          type: 'POWER_SOCKET',
+          status: 'GOOD',
+          description: 'Ổ cắm điện đôi âm tường',
+          roomId: room.id,
+        },
+      });
+      assets.push(socket);
+    }
+
+    // 2 Water faucets
+    for (let j = 1; j <= 2; j++) {
+      const faucet = await prisma.asset.create({
+        data: {
+          name: 'Vòi nước',
+          code: `FC-${room.roomNumber}-0${j}`,
+          type: 'FAUCET',
+          status: 'GOOD',
+          description: 'Vòi nước inox 304 phòng tắm/rửa mặt',
+          roomId: room.id,
+        },
+      });
+      assets.push(faucet);
     }
   }
   console.log(`✅ Created ${assets.length} assets.`);

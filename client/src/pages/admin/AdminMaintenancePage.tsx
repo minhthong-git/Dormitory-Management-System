@@ -597,20 +597,13 @@ const AdminMaintenancePage: React.FC = () => {
                     )}
 
                     {ticket.status === 'ASSIGNED' && (
-                      <>
-                        <button
-                          className="btn-card btn-card--secondary"
-                          onClick={() => handleStartRepairing(ticket.id)}
-                        >
-                          Bắt đầu sửa
-                        </button>
-                        <button
-                          className="btn-card btn-card--outline"
-                          onClick={() => openAssignModal(ticket)}
-                        >
-                          Đổi người
-                        </button>
-                      </>
+                      <button
+                        className="btn-card btn-card--outline"
+                        style={{ width: '100%' }}
+                        onClick={() => openAssignModal(ticket)}
+                      >
+                        Đổi người
+                      </button>
                     )}
 
                     {ticket.status === 'IN_PROGRESS' && (

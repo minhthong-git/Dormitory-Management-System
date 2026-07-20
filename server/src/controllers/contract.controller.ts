@@ -367,7 +367,7 @@ export const cancelContract = async (req: Request, res: Response, next: NextFunc
     // Check if the current user is the owner
     // @ts-ignore
     const user = req.user;
-    if (user.role === 'STUDENT' && contract.student?.userId !== user.sub) {
+    if (user?.role === 'STUDENT' && contract.student?.userId !== user?.sub) {
       throw new AppError('Không có quyền hủy hợp đồng này', 403);
     }
 
