@@ -11,10 +11,14 @@ export const getBeds = async (req: Request, res: Response, next: NextFunction): 
     const skip = (page - 1) * limit;
     const roomId = (req.query.roomId as string | undefined)?.trim();
     const status = (req.query.status as string | undefined)?.trim();
+    const buildingId = (req.query.buildingId as string | undefined)?.trim();
 
-    const where: Record<string, unknown> = {};
+    const where: any = {};
     if (roomId) where.roomId = roomId;
     if (status) where.status = status;
+    if (buildingId) {
+      where.room = { buildingId };
+    }
 
     const [beds, total] = await prisma.$transaction([
       prisma.bed.findMany({

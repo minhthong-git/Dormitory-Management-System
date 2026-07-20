@@ -40,10 +40,12 @@ const AdminBedsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // ── Filters ───────────────────────────────────────────────────
+  const [filterBuilding, setFilterBuilding] = useState('');
   const [filterRoomId, setFilterRoomId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
   const LIMIT = 20;
+  const [buildings, setBuildings] = useState<any[]>([]);
 
   // ── Modal ─────────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
@@ -61,6 +63,7 @@ const AdminBedsPage: React.FC = () => {
     try {
       const params: Record<string, unknown> = { page, limit: LIMIT };
       if (filterRoomId) params.roomId = filterRoomId;
+      if (filterBuilding) params.buildingId = filterBuilding;
       if (filterStatus) params.status = filterStatus;
       const res = await bedApi.getAll(params as Parameters<typeof bedApi.getAll>[0]);
       setBeds(res.data.data || []);
@@ -70,7 +73,7 @@ const AdminBedsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, filterRoomId, filterStatus]);
+  }, [page, filterRoomId, filterBuilding, filterStatus]);
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -81,8 +84,20 @@ const AdminBedsPage: React.FC = () => {
     }
   }, []);
 
+  const fetchBuildings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/buildings');
+      const result = await response.json();
+      if (result.success && result.data.length > 0) {
+        setBuildings(result.data);
+      }
+    } catch (error) {
+      console.error('Lỗi lấy danh sách tòa nhà:', error);
+    }
+  }, []);
+
   useEffect(() => { fetchBeds(); }, [fetchBeds]);
-  useEffect(() => { fetchRooms(); }, [fetchRooms]);
+  useEffect(() => { fetchRooms(); fetchBuildings(); }, [fetchRooms, fetchBuildings]);
 
   // ── Helpers ───────────────────────────────────────────────────
   const getRoomLabel = (roomId: string) => {
@@ -190,26 +205,36 @@ const AdminBedsPage: React.FC = () => {
         {/* ── Filter Bar ───────────────────────────────────────── */}
         <div className="student-controls">
           <div className="student-filters">
+            <div className="form-group student-select-filter">
+              <select value={filterBuilding} onChange={(e) => { setFilterBuilding(e.target.value); setPage(1); }}>
+                <option value="">Tòa nhà (Tất cả)</option>
+                {buildings.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="form-group student-select-filter" style={{ minWidth: 220 }}>
               <select value={filterRoomId} onChange={(e) => { setFilterRoomId(e.target.value); setPage(1); }}>
-                <option value="">Tất cả phòng</option>
-                {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>Phòng {r.roomNumber} (Tầng {r.floor})</option>
-                ))}
+                <option value="">Phòng (Tất cả)</option>
+                {rooms
+                  .filter(r => filterBuilding ? r.buildingId === filterBuilding : true)
+                  .map((r) => (
+                    <option key={r.id} value={r.id}>Phòng {r.roomNumber} (Tầng {r.floor})</option>
+                  ))}
               </select>
             </div>
             <div className="form-group student-select-filter">
               <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}>
-                <option value="">Tất cả trạng thái</option>
+                <option value="">Trạng thái (Tất cả)</option>
                 <option value="AVAILABLE">Trống</option>
                 <option value="OCCUPIED">Có khách</option>
                 <option value="MAINTENANCE">Bảo trì</option>
               </select>
             </div>
           </div>
-          {(filterRoomId || filterStatus) && (
-            <button className="btn btn-outline" onClick={() => { setFilterRoomId(''); setFilterStatus(''); setPage(1); }}>
-              Đặt lại
+          {(filterBuilding || filterRoomId || filterStatus) && (
+            <button className="btn btn-outline" onClick={() => { setFilterBuilding(''); setFilterRoomId(''); setFilterStatus(''); setPage(1); }}>
+              Đặt lại lọc
             </button>
           )}
         </div>

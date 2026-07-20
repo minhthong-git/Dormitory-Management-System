@@ -5,6 +5,7 @@ export interface AssetFilters {
   page?: number;
   limit?: number;
   roomId?: string;
+  buildingId?: string;
   status?: string;
   type?: string;
   search?: string;

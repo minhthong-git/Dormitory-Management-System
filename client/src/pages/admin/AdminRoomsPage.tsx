@@ -15,6 +15,7 @@ const AdminRoomsPage: React.FC = () => {
 
   // Filters State
   const [searchRoomNumber, setSearchRoomNumber] = useState('');
+  const [filterBuilding, setFilterBuilding] = useState('');
   const [filterFloor, setFilterFloor] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -183,10 +184,11 @@ const AdminRoomsPage: React.FC = () => {
 
   const filteredRooms = rooms.filter((room) => {
     const matchesSearch = room.roomNumber.toLowerCase().includes(searchRoomNumber.toLowerCase().trim());
+    const matchesBuilding = filterBuilding === '' || room.buildingId === filterBuilding;
     const matchesFloor = filterFloor === '' || room.floor.toString() === filterFloor;
     const matchesType = filterType === '' || room.type === filterType;
     const matchesStatus = filterStatus === '' || room.status === filterStatus;
-    return matchesSearch && matchesFloor && matchesType && matchesStatus;
+    return matchesSearch && matchesBuilding && matchesFloor && matchesType && matchesStatus;
   });
 
   const totalBeds = beds.length;
@@ -235,6 +237,14 @@ const AdminRoomsPage: React.FC = () => {
               <input type="text" placeholder="Tìm số phòng..." value={searchRoomNumber} onChange={(e) => setSearchRoomNumber(e.target.value)} />
             </div>
             <div className="form-group student-select-filter">
+              <select value={filterBuilding} onChange={(e) => setFilterBuilding(e.target.value)}>
+                <option value="">Tòa nhà (Tất cả)</option>
+                {buildings.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group student-select-filter">
               <select value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)}>
                 <option value="">Tầng (Tất cả)</option>
                 <option value="1">Tầng 1</option>
@@ -259,8 +269,8 @@ const AdminRoomsPage: React.FC = () => {
               </select>
             </div>
           </div>
-          {(searchRoomNumber || filterFloor || filterType || filterStatus) && (
-            <button className="btn btn-outline" onClick={() => { setSearchRoomNumber(''); setFilterFloor(''); setFilterType(''); setFilterStatus(''); }}>
+          {(searchRoomNumber || filterBuilding || filterFloor || filterType || filterStatus) && (
+            <button className="btn btn-outline" onClick={() => { setSearchRoomNumber(''); setFilterBuilding(''); setFilterFloor(''); setFilterType(''); setFilterStatus(''); }}>
               Đặt lại lọc
             </button>
           )}

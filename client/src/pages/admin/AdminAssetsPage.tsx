@@ -7,12 +7,14 @@ import './AdminAssetsPage.css';
 const AdminAssetsPage: React.FC = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [buildings, setBuildings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
   // Filters State
+  const [filterBuilding, setFilterBuilding] = useState('');
   const [filterRoomId, setFilterRoomId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -38,6 +40,7 @@ const AdminAssetsPage: React.FC = () => {
         page,
         limit,
         roomId: filterRoomId || undefined,
+        buildingId: filterBuilding || undefined,
         status: filterStatus || undefined,
         type: filterType || undefined,
         search: searchQuery.trim() || undefined,
@@ -52,7 +55,7 @@ const AdminAssetsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, limit, filterRoomId, filterStatus, filterType, searchQuery]);
+  }, [page, limit, filterRoomId, filterBuilding, filterStatus, filterType, searchQuery]);
 
   // Fetch Rooms for dropdown
   const fetchRooms = async () => {
@@ -66,13 +69,26 @@ const AdminAssetsPage: React.FC = () => {
     }
   };
 
+  const fetchBuildings = useCallback(async () => {
+    try {
+      const response = await fetch('/api/buildings');
+      const result = await response.json();
+      if (result.success && result.data.length > 0) {
+        setBuildings(result.data);
+      }
+    } catch (error) {
+      console.error('Lỗi lấy danh sách tòa nhà:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets]);
 
   useEffect(() => {
     fetchRooms();
-  }, []);
+    fetchBuildings();
+  }, [fetchBuildings]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -96,6 +112,7 @@ const AdminAssetsPage: React.FC = () => {
 
   const handleResetFilters = () => {
     setSearchQuery('');
+    setFilterBuilding('');
     setFilterRoomId('');
     setFilterStatus('');
     setFilterType('');
@@ -202,6 +219,7 @@ const AdminAssetsPage: React.FC = () => {
   };
 
   const typeLabel: Record<string, string> = {
+<<<<<<< HEAD
     AIR_CONDITIONER: 'Máy lạnh ❄️',
     DESK: 'Bàn học 📝',
     CHAIR: 'Ghế ngồi 🪑',
@@ -217,6 +235,12 @@ const AdminAssetsPage: React.FC = () => {
     WATER_TAP: 'Vòi nước 🚰',
     POWER_SOCKET: 'Ổ điện 🔌',
 >>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
+=======
+    AIR_CONDITIONER: 'Máy lạnh',
+    DESK: 'Bàn học',
+    CHAIR: 'Ghế ngồi',
+    FAN: 'Quạt máy',
+>>>>>>> origin/main
   };
 
   const statusBadgeClass = (status: string) => {
@@ -299,7 +323,22 @@ const AdminAssetsPage: React.FC = () => {
           </div>
 
           <div className="filter-input-group">
-            <label htmlFor="room-filter">Lọc theo Phòng</label>
+            <label htmlFor="building-filter">Tòa nhà</label>
+            <select
+              id="building-filter"
+              className="filter-control"
+              value={filterBuilding}
+              onChange={(e) => { setFilterBuilding(e.target.value); setPage(1); }}
+            >
+              <option value="">Tất cả tòa nhà</option>
+              {buildings.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-input-group">
+            <label htmlFor="room-filter">Phòng</label>
             <select
               id="room-filter"
               className="filter-control"
@@ -307,11 +346,13 @@ const AdminAssetsPage: React.FC = () => {
               onChange={handleFilterRoomChange}
             >
               <option value="">Tất cả phòng</option>
-              {rooms.map(room => (
-                <option key={room.id} value={room.id}>
-                  Phòng {room.roomNumber} ({room.building?.name || 'Khu A'})
-                </option>
-              ))}
+              {rooms
+                .filter(r => filterBuilding ? r.buildingId === filterBuilding : true)
+                .map(room => (
+                  <option key={room.id} value={room.id}>
+                    Phòng {room.roomNumber} ({room.building?.name || 'Khu A'})
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -358,7 +399,7 @@ const AdminAssetsPage: React.FC = () => {
             </select>
           </div>
 
-          {(searchQuery || filterRoomId || filterStatus || filterType) && (
+          {(searchQuery || filterBuilding || filterRoomId || filterStatus || filterType) && (
             <div className="filter-input-group" style={{ justifyContent: 'flex-end' }}>
               <button className="btn btn-outline" onClick={handleResetFilters}>
                 Đặt lại lọc
@@ -391,7 +432,7 @@ const AdminAssetsPage: React.FC = () => {
                   <th>Loại</th>
                   <th>Trạng thái</th>
                   <th>Mô tả</th>
-                  <th>Thao tác</th>
+                  <th style={{ textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -423,20 +464,20 @@ const AdminAssetsPage: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <div className="assets-table__actions">
+                      <div className="action-buttons" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                         <button
-                          className="btn-icon"
+                          className="btn btn-sm btn-outline"
                           onClick={() => handleOpenEdit(asset)}
                           title="Sửa thông tin"
                         >
-                          ✏️
+                          Sửa
                         </button>
                         <button
-                          className="btn-icon btn-icon--delete"
+                          className="btn btn-sm btn-danger"
                           onClick={() => handleDeleteAsset(asset.id, asset.code)}
                           title="Xóa tài sản"
                         >
-                          🗑️
+                          Xóa
                         </button>
                       </div>
                     </td>
