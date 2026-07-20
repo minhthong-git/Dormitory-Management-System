@@ -11,10 +11,16 @@ import { prisma } from './config/db';
 import apiRoutes from './routes';
 import { initSocket } from './socket';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { cronService } from './services/cron.service';
 
 // ── App Setup ──────────────────────────────────────────────────
 const app = express();
 const httpServer = http.createServer(app);
+
+// Patch BigInt serialization for JSON
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
 
 // ── Security & Logging ─────────────────────────────────────────
 app.use(helmet());
@@ -51,6 +57,9 @@ const startServer = async () => {
     // Verify DB connection
     await prisma.$connect();
     console.log('[DB] Prisma connected successfully');
+
+    // Start background cron jobs
+    cronService.init();
 
     httpServer.listen(env.PORT, () => {
       console.log(`\n🚀 Server running on http://localhost:${env.PORT}`);

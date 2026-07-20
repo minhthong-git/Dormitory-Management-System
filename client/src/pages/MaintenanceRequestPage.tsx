@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { assetApi } from '@/api/asset.api';
 import { maintenanceApi } from '@/api/maintenance.api';
+import { useSearchParams } from 'react-router-dom';
 import type { Asset, MaintenanceRequest } from '@/types';
 import './MaintenanceRequestPage.css';
 
 const MaintenanceRequestPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const initialAssetId = searchParams.get('assetId') || '';
   const [assets, setAssets] = useState<Asset[]>([]);
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +17,7 @@ const MaintenanceRequestPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
-  const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [selectedAssetId, setSelectedAssetId] = useState(initialAssetId);
 
   // Fetch student's room assets & reported tickets
   const fetchRoomInfoAndTickets = useCallback(async () => {

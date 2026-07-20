@@ -48,10 +48,11 @@ export const getContracts = async (req: Request, res: Response, next: NextFuncti
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          student: { select: { id: true, studentCode: true, fullName: true, email: true } },
+          student: { select: { id: true, studentCode: true, fullName: true, email: true, faculty: true, major: true, course: true } },
           bed: {
             select: {
               id: true,
+              roomId: true,
               bedNumber: true,
               status: true,
               room: { select: { id: true, roomNumber: true, type: true, floor: true, pricePerMonth: true } },
@@ -75,10 +76,11 @@ export const getContractById = async (req: Request, res: Response, next: NextFun
     const contract = await prisma.contract.findUnique({
       where: { id },
       include: {
-        student: { select: { id: true, studentCode: true, fullName: true, email: true } },
+        student: { select: { id: true, studentCode: true, fullName: true, email: true, faculty: true, major: true, course: true } },
         bed: {
           select: {
             id: true,
+            roomId: true,
             bedNumber: true,
             status: true,
             room: { select: { id: true, roomNumber: true, type: true, floor: true, pricePerMonth: true } },
@@ -164,8 +166,21 @@ export const bookBed = async (req: Request, res: Response, next: NextFunction): 
     const { bedId, startDate, endDate } = req.body;
 
     const student = await prisma.student.findUnique({ where: { userId } });
-    if (!student || student.gender === 'OTHER') {
-      throw new AppError('Vui lòng cập nhật giới tính (Nam/Nữ) trong hồ sơ cá nhân để thuê phòng', 400);
+    if (!student) {
+      throw new AppError('Vui lòng cập nhật đầy đủ hồ sơ cá nhân để thuê phòng', 400);
+    }
+    
+    // Yêu cầu đầy đủ thông tin để book phòng
+    const missingInfo = [];
+    if (!student.phone) missingInfo.push('Số điện thoại');
+    if (!student.dateOfBirth) missingInfo.push('Ngày sinh');
+    if (student.gender === 'OTHER') missingInfo.push('Giới tính (Nam/Nữ)');
+    if (!student.faculty) missingInfo.push('Khoa');
+    if (!student.major) missingInfo.push('Chuyên ngành');
+    if (!student.course) missingInfo.push('Khóa/Lớp học');
+    
+    if (missingInfo.length > 0) {
+      throw new AppError(`Vui lòng cập nhật đầy đủ thông tin: ${missingInfo.join(', ')} trong hồ sơ cá nhân để thuê phòng.`, 400);
     }
 
     const bed = await prisma.bed.findUnique({ where: { id: bedId }, include: { room: true } });
@@ -189,7 +204,7 @@ export const bookBed = async (req: Request, res: Response, next: NextFunction): 
 
     const price = bed.room.pricePerMonth;
     const sDate = new Date(startDate || new Date());
-    const eDate = new Date(endDate || new Date(new Date().setMonth(new Date().getMonth() + 6))); // Default 6 months
+    const eDate = new Date(endDate || new Date(new Date().setMonth(new Date().getMonth() + 3))); // Default 3 months
 
     const [contract] = await prisma.$transaction([
       prisma.contract.create({
@@ -213,6 +228,78 @@ export const bookBed = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
+// ── POST /api/contracts/:id/renew ──────────────────────────────────
+export const renewContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { sub: userId } = req.user!;
+    
+    const oldContract = await prisma.contract.findUnique({
+      where: { id },
+      include: { student: true, bed: { include: { room: true } } }
+    });
+    
+    if (!oldContract) throw new AppError('Hợp đồng không tồn tại', 404);
+    if (oldContract.student.userId !== userId) throw new AppError('Không có quyền gia hạn hợp đồng này', 403);
+    if (oldContract.renewalStatus !== 'PRIORITY') throw new AppError('Bạn chưa được cấp quyền ưu tiên gia hạn hoặc quyền đã hết hạn', 400);
+    if (oldContract.status !== 'ACTIVE') throw new AppError('Hợp đồng hiện tại không còn hiệu lực', 400);
+
+    // Tính toán ngày kết thúc cũ + 1 tháng nghỉ -> ngày bắt đầu mới
+    const nextStartDate = new Date(oldContract.endDate);
+    nextStartDate.setMonth(nextStartDate.getMonth() + 1);
+    
+    const nextEndDate = new Date(nextStartDate);
+    nextEndDate.setMonth(nextEndDate.getMonth() + 3);
+
+    const price = oldContract.bed.room.pricePerMonth;
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + 3); // 3 ngày để thanh toán
+
+    const newContract = await prisma.$transaction(async (tx) => {
+      const contract = await tx.contract.create({
+        data: {
+          studentId: oldContract.studentId,
+          bedId: oldContract.bedId,
+          startDate: nextStartDate,
+          endDate: nextEndDate,
+          price: price,
+          deposit: price,
+          monthlyFee: price,
+          status: 'AWAITING_PAYMENT',
+          renewalStatus: 'RENEWED',
+        }
+      });
+
+      await tx.invoice.create({
+        data: {
+          roomId: oldContract.bed.roomId,
+          contractId: contract.id,
+          billingMonth: nextStartDate.getMonth() + 1, // Tháng của chu kỳ mới
+          billingYear: nextStartDate.getFullYear(),
+          roomFee: price,
+          electricityFee: 0,
+          waterFee: 0,
+          serviceFee: 0,
+          totalAmount: price * 2, // Tiền phòng tháng đầu + cọc (bằng 1 tháng)
+          dueDate: dueDate,
+        }
+      });
+
+      await tx.contract.update({
+        where: { id: oldContract.id },
+        data: { renewalStatus: 'RENEWED' } // Đánh dấu đã đăng ký gia hạn
+      });
+
+      return contract;
+    });
+
+    sendSuccess(res, newContract, 'Đã tạo yêu cầu gia hạn phòng. Vui lòng thanh toán hóa đơn trong vòng 3 ngày.', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── PATCH /api/contracts/:id/approve ───────────────────────────────
 export const approveContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -221,19 +308,31 @@ export const approveContract = async (req: Request, res: Response, next: NextFun
     if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
     if (contract.status !== 'PENDING') throw new AppError('Hợp đồng không ở trạng thái chờ duyệt', 400);
 
+    const invoiceAmount = contract.deposit + contract.monthlyFee;
+    const dueDate = new Date();
+    dueDate.setMinutes(dueDate.getMinutes() + 10); // Hạn thanh toán: 10 phút
+
     const [updated] = await prisma.$transaction([
-      prisma.contract.update({ where: { id }, data: { status: 'ACTIVE' } }),
-      prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'OCCUPIED' } }),
-      prisma.room.update({
-        where: { id: contract.bed.roomId },
+      prisma.contract.update({ where: { id }, data: { status: 'AWAITING_PAYMENT' } }),
+      // Giường vẫn giữ trạng thái RESERVED cho đến khi thanh toán xong
+      prisma.invoice.create({
         data: {
-          currentOccupancy: { increment: 1 },
-          status: contract.bed.room.currentOccupancy + 1 >= contract.bed.room.capacity ? 'FULL' : 'AVAILABLE',
-        },
-      }),
+          roomId: contract.bed.roomId,
+          contractId: contract.id,
+          billingMonth: new Date().getMonth() + 1,
+          billingYear: new Date().getFullYear(),
+          roomFee: contract.monthlyFee,
+          electricityFee: 0,
+          waterFee: 0,
+          serviceFee: contract.deposit, // Dùng serviceFee để lưu tiền cọc cho hóa đơn đầu tiên
+          totalAmount: invoiceAmount,
+          paymentStatus: 'UNPAID',
+          dueDate,
+        }
+      })
     ]);
 
-    sendSuccess(res, updated, 'Duyệt hợp đồng thành công');
+    sendSuccess(res, updated, 'Đã duyệt yêu cầu. Vui lòng thanh toán hóa đơn để hoàn tất check-in.');
   } catch (err) {
     next(err);
   }
@@ -245,7 +344,7 @@ export const rejectContract = async (req: Request, res: Response, next: NextFunc
     const { id } = req.params;
     const contract = await prisma.contract.findUnique({ where: { id } });
     if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
-    if (contract.status !== 'PENDING') throw new AppError('Hợp đồng không ở trạng thái chờ duyệt', 400);
+    if (contract.status !== 'PENDING' && contract.status !== 'AWAITING_PAYMENT') throw new AppError('Hợp đồng không ở trạng thái chờ duyệt hoặc chờ thanh toán', 400);
 
     const [updated] = await prisma.$transaction([
       prisma.contract.update({ where: { id }, data: { status: 'REJECTED' } }),
@@ -253,6 +352,39 @@ export const rejectContract = async (req: Request, res: Response, next: NextFunc
     ]);
 
     sendSuccess(res, updated, 'Đã từ chối hợp đồng');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /api/contracts/:id/cancel ───────────────────────────────
+export const cancelContract = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const contract = await prisma.contract.findUnique({ where: { id }, include: { student: true } });
+    if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
+    
+    // Check if the current user is the owner
+    // @ts-ignore
+    const user = req.user;
+    if (user.role === 'STUDENT' && contract.student?.userId !== user.sub) {
+      throw new AppError('Không có quyền hủy hợp đồng này', 403);
+    }
+
+    if (contract.status !== 'PENDING' && contract.status !== 'AWAITING_PAYMENT') {
+      throw new AppError('Chỉ có thể hủy hợp đồng đang chờ duyệt hoặc chờ thanh toán', 400);
+    }
+
+    const [updated] = await prisma.$transaction([
+      prisma.contract.update({ where: { id }, data: { status: 'REJECTED' } }),
+      prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'AVAILABLE' } }),
+      prisma.invoice.updateMany({ 
+        where: { contractId: id, paymentStatus: 'UNPAID' },
+        data: { paymentStatus: 'OVERDUE' }
+      })
+    ]);
+
+    sendSuccess(res, updated, 'Đã hủy yêu cầu thuê phòng thành công');
   } catch (err) {
     next(err);
   }
@@ -465,19 +597,38 @@ export const deleteContract = async (req: Request, res: Response, next: NextFunc
     const contract = await prisma.contract.findUnique({ where: { id }, include: { bed: { include: { room: true } } } });
     if (!contract) throw new AppError('Hợp đồng không tồn tại', 404);
 
-    if (contract.status === 'ACTIVE') {
-      // Revert bed and room if deleting an active contract
-      await prisma.$transaction([
-        prisma.contract.delete({ where: { id } }),
-        prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'AVAILABLE' } }),
-        prisma.room.update({
-          where: { id: contract.bed.roomId },
-          data: { currentOccupancy: { decrement: 1 }, status: 'AVAILABLE' },
-        }),
-      ]);
-    } else {
-      await prisma.contract.delete({ where: { id } });
+    const transactionTasks: any[] = [];
+
+    // 1. Delete unpaid invoices and their payment transactions
+    const unpaidInvoices = await prisma.invoice.findMany({ where: { contractId: id, paymentStatus: 'UNPAID' } });
+    const unpaidInvoiceIds = unpaidInvoices.map(i => i.id);
+    if (unpaidInvoiceIds.length > 0) {
+      transactionTasks.push(prisma.paymentTransaction.deleteMany({ where: { invoiceId: { in: unpaidInvoiceIds } } }));
+      transactionTasks.push(prisma.invoice.deleteMany({ where: { id: { in: unpaidInvoiceIds } } }));
     }
+
+    // 2. Unlink any remaining paid invoices to preserve financial history
+    transactionTasks.push(prisma.invoice.updateMany({ where: { contractId: id }, data: { contractId: null } }));
+
+    // 3. Delete transfer histories (contractId is required, so they must be deleted)
+    transactionTasks.push(prisma.transferHistory.deleteMany({ where: { contractId: id } }));
+
+    // 4. Revert Bed and Room statuses based on contract status
+    if (contract.status === 'ACTIVE') {
+      transactionTasks.push(prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'AVAILABLE' } }));
+      transactionTasks.push(prisma.room.update({
+        where: { id: contract.bed.roomId },
+        data: { currentOccupancy: { decrement: 1 }, status: 'AVAILABLE' },
+      }));
+    } else if (contract.status === 'PENDING' || contract.status === 'AWAITING_PAYMENT') {
+      transactionTasks.push(prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'AVAILABLE' } }));
+      // Room occupancy was never incremented for these statuses, so no decrement needed.
+    }
+
+    // 5. Finally, delete the contract itself
+    transactionTasks.push(prisma.contract.delete({ where: { id } }));
+
+    await prisma.$transaction(transactionTasks);
 
     sendSuccess(res, null, 'Xóa hợp đồng thành công');
   } catch (err) {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { roomApi } from '@/api/room.api';
 import { bedApi } from '@/api/bed.api';
-import type { Room, Bed } from '@/types';
+import { assetApi } from '@/api/asset.api';
+import type { Room, Bed, Asset } from '@/types';
 import './AdminRoomsPage.css';
 import '../BuildingList.css';
 
@@ -9,6 +10,7 @@ const AdminRoomsPage: React.FC = () => {
   // State for data
   const [rooms, setRooms] = useState<Room[]>([]);
   const [beds, setBeds] = useState<Bed[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
@@ -38,12 +40,14 @@ const AdminRoomsPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [roomsRes, bedsRes] = await Promise.all([
-        roomApi.getAll({ limit: 100 }),
-        bedApi.getAll({ limit: 100 }),
+      const [roomsRes, bedsRes, assetsRes] = await Promise.all([
+        roomApi.getAll({ limit: 1000 }),
+        bedApi.getAll({ limit: 1000 }),
+        assetApi.getAll({ limit: 1000 }),
       ]);
       setRooms(roomsRes.data.data || []);
       setBeds(bedsRes.data.data || []);
+      setAssets(assetsRes.data.data || []);
     } catch (err) {
       console.error('Lỗi tải dữ liệu phòng & giường:', err);
     } finally {
@@ -169,6 +173,14 @@ const AdminRoomsPage: React.FC = () => {
     bedsByRoom[bed.roomId].push(bed);
   });
 
+  const assetsByRoom: Record<string, Asset[]> = {};
+  assets.forEach((asset) => {
+    if (!assetsByRoom[asset.roomId]) {
+      assetsByRoom[asset.roomId] = [];
+    }
+    assetsByRoom[asset.roomId].push(asset);
+  });
+
   const filteredRooms = rooms.filter((room) => {
     const matchesSearch = room.roomNumber.toLowerCase().includes(searchRoomNumber.toLowerCase().trim());
     const matchesFloor = filterFloor === '' || room.floor.toString() === filterFloor;
@@ -267,6 +279,8 @@ const AdminRoomsPage: React.FC = () => {
               const roomBeds = bedsByRoom[room.id] || [];
               const occupiedBeds = roomBeds.filter((b) => b.status === 'OCCUPIED');
               const availableBeds = roomBeds.filter((b) => b.status === 'AVAILABLE');
+              const roomAssets = assetsByRoom[room.id] || [];
+              const damagedAssets = roomAssets.filter((a) => a.status !== 'GOOD');
 
               return (
                 <div key={room.id} className="room-card">
@@ -337,6 +351,39 @@ const AdminRoomsPage: React.FC = () => {
                           </div>
                         );
                       })
+                    )}
+                  </div>
+
+                  <div className="room-card__assets-container" style={{ marginTop: '1rem', borderTop: '1px dashed var(--color-border)', paddingTop: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <strong style={{ fontSize: '0.85rem' }}>📺 Tài sản phòng</strong>
+                      <span style={{ fontSize: '0.75rem', color: damagedAssets.length > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
+                        {roomAssets.length} thiết bị {damagedAssets.length > 0 && `(Lỗi ${damagedAssets.length})`}
+                      </span>
+                    </div>
+                    {roomAssets.length === 0 ? (
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                        Chưa có tài sản.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {roomAssets.map(asset => (
+                          <div 
+                            key={asset.id} 
+                            style={{ 
+                              fontSize: '0.75rem', 
+                              padding: '2px 6px', 
+                              borderRadius: '4px', 
+                              backgroundColor: asset.status === 'GOOD' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                              color: asset.status === 'GOOD' ? 'var(--color-success)' : 'var(--color-danger)',
+                              border: `1px solid ${asset.status === 'GOOD' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+                            }}
+                            title={`${asset.name} (${asset.code}) - ${asset.status}`}
+                          >
+                            {asset.name} {asset.status !== 'GOOD' && '⚠️'}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>

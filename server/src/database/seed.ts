@@ -8,7 +8,10 @@ async function main() {
 
   // Clean existing data
   console.log('🧹 Cleaning old data...');
+  await prisma.maintenanceRequest.deleteMany({});
+  await prisma.asset.deleteMany({});
   await prisma.notification.deleteMany({});
+  await prisma.paymentTransaction.deleteMany({});
   await prisma.invoice.deleteMany({});
   await prisma.utilityReading.deleteMany({});
   await prisma.transferHistory.deleteMany({});
@@ -64,17 +67,32 @@ async function main() {
   for (let i = 1; i <= 10; i++) {
     const roomNumber = `P10${i}`;
     const floor = Math.ceil(i / 5); // 5 rooms per floor
+    
+    let type = 'STANDARD';
+    let capacity = 4;
+    let pricePerMonth = 1200000;
+    
+    if (i <= 3) {
+      type = 'SMALL';
+      capacity = 2;
+      pricePerMonth = 1500000;
+    } else if (i >= 8) {
+      type = 'LARGE';
+      capacity = 6;
+      pricePerMonth = 900000;
+    }
+
     const room = await prisma.room.create({
       data: {
         roomNumber,
         floor,
-        capacity: 4,
+        capacity,
         currentOccupancy: 0,
-        type: 'STANDARD',
+        type,
         genderType: i % 2 === 0 ? 'MALE' : 'FEMALE',
         status: 'AVAILABLE',
-        pricePerMonth: 1200000,
-        description: `Phòng Quad 4 giường tầng ${floor}, trang bị máy lạnh, tủ lạnh mini.`,
+        pricePerMonth,
+        description: `Phòng ${type} ${capacity} giường tầng ${floor}, trang bị máy lạnh, tủ lạnh mini.`,
         buildingId: buildingA.id,
       },
     });
@@ -82,11 +100,11 @@ async function main() {
   }
   console.log(`✅ Created ${rooms.length} rooms.`);
 
-  // 4. Create 40 Beds (4 per Room)
+  // 4. Create Beds
   console.log('🛏️ Creating beds...');
   const beds = [];
   for (const room of rooms) {
-    for (let bedNum = 1; bedNum <= 4; bedNum++) {
+    for (let bedNum = 1; bedNum <= room.capacity; bedNum++) {
       const bed = await prisma.bed.create({
         data: {
           roomId: room.id,
@@ -99,6 +117,59 @@ async function main() {
     }
   }
   console.log(`✅ Created ${beds.length} beds.`);
+
+  // 4.5 Create Assets for Rooms
+  console.log('📺 Creating assets...');
+  let assetCount = 0;
+  for (const room of rooms) {
+    // 1 AC per room
+    await prisma.asset.create({
+      data: {
+        roomId: room.id,
+        code: `AC-${room.roomNumber}-01`,
+        name: 'Máy lạnh Panasonic 1.5HP',
+        type: 'AIR_CONDITIONER',
+        status: Math.random() > 0.9 ? 'DAMAGED' : 'GOOD',
+      }
+    });
+    assetCount++;
+    
+    // 1 Fan per room
+    await prisma.asset.create({
+      data: {
+        roomId: room.id,
+        code: `FAN-${room.roomNumber}-01`,
+        name: 'Quạt treo tường Senko',
+        type: 'FAN',
+        status: 'GOOD',
+      }
+    });
+    assetCount++;
+
+    // Desks and Chairs matching capacity
+    for (let i = 1; i <= room.capacity; i++) {
+      await prisma.asset.create({
+        data: {
+          roomId: room.id,
+          code: `DSK-${room.roomNumber}-${i.toString().padStart(2, '0')}`,
+          name: 'Bàn học cá nhân',
+          type: 'DESK',
+          status: Math.random() > 0.95 ? 'REPAIRING' : 'GOOD',
+        }
+      });
+      await prisma.asset.create({
+        data: {
+          roomId: room.id,
+          code: `CHR-${room.roomNumber}-${i.toString().padStart(2, '0')}`,
+          name: 'Ghế xoay văn phòng',
+          type: 'CHAIR',
+          status: 'GOOD',
+        }
+      });
+      assetCount += 2;
+    }
+  }
+  console.log(`✅ Created ${assetCount} assets.`);
 
   // 5. Create 20 Student Users and Student profiles
   console.log('👥 Creating student accounts & profiles...');
@@ -175,7 +246,7 @@ async function main() {
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 6);
 
-    await prisma.contract.create({
+    const contract = await prisma.contract.create({
       data: {
         studentId: student.id,
         bedId: bed.id,
@@ -202,11 +273,69 @@ async function main() {
         },
       });
 
-      // Update room status if full
       if (updatedRoom.currentOccupancy >= updatedRoom.capacity) {
         await prisma.room.update({
           where: { id: bed.roomId },
           data: { status: 'FULL' },
+        });
+      }
+    }
+
+  }
+
+  // Generate 2 past invoices for each room
+  console.log('🧾 Creating invoices...');
+  for (const room of rooms) {
+    for (let monthOffset = 1; monthOffset <= 2; monthOffset++) {
+      const billingMonth = new Date().getMonth() + 1 - monthOffset > 0 
+        ? new Date().getMonth() + 1 - monthOffset 
+        : new Date().getMonth() + 13 - monthOffset;
+      const billingYear = new Date().getMonth() + 1 - monthOffset > 0 
+        ? new Date().getFullYear() 
+        : new Date().getFullYear() - 1;
+
+      const roomFee = room.pricePerMonth;
+      const electricityFee = Math.floor(Math.random() * 200000) + 100000;
+      const waterFee = Math.floor(Math.random() * 50000) + 30000;
+      const serviceFee = 50000;
+      const totalAmount = roomFee + electricityFee + waterFee + serviceFee;
+      
+      const paymentStatus = monthOffset === 2 || room.currentOccupancy > 0 ? 'PAID' : 'OVERDUE';
+      const dueDate = new Date(billingYear, billingMonth - 1, 15);
+      
+      let paidDate = null;
+      if (paymentStatus === 'PAID') {
+        paidDate = new Date(billingYear, billingMonth - 1, Math.floor(Math.random() * 10) + 5);
+      }
+
+      const invoice = await prisma.invoice.create({
+        data: {
+          roomId: room.id,
+          billingMonth,
+          billingYear,
+          roomFee,
+          electricityFee,
+          waterFee,
+          serviceFee,
+          totalAmount,
+          paymentStatus,
+          dueDate,
+          paidDate,
+        }
+      });
+
+      if (paymentStatus === 'PAID') {
+        await prisma.paymentTransaction.create({
+          data: {
+            invoiceId: invoice.id,
+            userId: students[0].userId, // just use the first student as the payer
+            amount: totalAmount,
+            provider: 'PAYOS',
+            providerTransactionId: `TXN-${invoice.id.substring(0,8).toUpperCase()}`,
+            orderCode: BigInt(Math.floor(Math.random() * 9000000) + 1000000),
+            status: 'SUCCESS',
+            paidAt: paidDate || new Date(),
+          }
         });
       }
     }

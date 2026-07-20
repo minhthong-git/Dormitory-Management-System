@@ -134,7 +134,7 @@ async function checkUserOccupiesRoom(userId: string, roomId: string): Promise<bo
     where: {
       student: { userId },
       bed: { roomId },
-      status: 'ACTIVE',
+      status: { in: ['ACTIVE', 'AWAITING_PAYMENT'] },
     },
   });
   return !!activeContract;

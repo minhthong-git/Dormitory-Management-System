@@ -125,8 +125,10 @@ model Contract {
   price     Float
   deposit    Float    @default(0)
   monthlyFee Float    @default(0)
-  /// Allowed values: ACTIVE | EXPIRED | TERMINATED
+  /// Allowed values: ACTIVE | EXPIRED | TERMINATED | PENDING | AWAITING_PAYMENT | REJECTED
   status    String   @default("ACTIVE")
+  /// Allowed values: NONE | PRIORITY | EXPIRED_PRIORITY | RENEWED
+  renewalStatus String @default("NONE")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -177,7 +179,6 @@ model Invoice {
   contract      Contract?     @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   paymentTransactions PaymentTransaction[]
 
-  @@unique([roomId, billingMonth, billingYear])
   @@index([roomId])
   @@index([contractId])
   @@map("invoices")
@@ -290,7 +291,7 @@ model PaymentTransaction {
   /// Allowed values: PAYOS
   provider              String    @default("PAYOS")
   providerTransactionId String?
-  orderCode             Int       @unique
+  orderCode             BigInt    @unique
   amount                Float
   /// Allowed values: PENDING | SUCCESS | FAILED | CANCELLED | EXPIRED
   status                String    @default("PENDING")

@@ -11,6 +11,10 @@ const ProfilePage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [gender, setGender] = useState('OTHER');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [faculty, setFaculty] = useState('');
+  const [major, setMajor] = useState('');
+  const [course, setCourse] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Password Form State
@@ -30,6 +34,13 @@ const ProfilePage: React.FC = () => {
       if (user.student?.gender) {
         setGender(user.student.gender);
       }
+      if (user.student?.dateOfBirth) {
+        // user.student.dateOfBirth could be full ISO string, we just need YYYY-MM-DD
+        setDateOfBirth(user.student.dateOfBirth.substring(0, 10));
+      }
+      setFaculty(user.student?.faculty || '');
+      setMajor(user.student?.major || '');
+      setCourse(user.student?.course || '');
     }
   }, [user]);
 
@@ -49,7 +60,7 @@ const ProfilePage: React.FC = () => {
 
     setIsUpdating(true);
     try {
-      await authApi.updateProfile({ fullName, phone, gender });
+      await authApi.updateProfile({ fullName, phone, gender, dateOfBirth, faculty, major, course });
       await fetchMe();
       setMessage({ text: 'Cập nhật thông tin cá nhân thành công', type: 'success' });
     } catch (err: any) {
@@ -190,6 +201,16 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="form-group">
+                  <label htmlFor="dateOfBirth">Ngày sinh</label>
+                  <input
+                    id="dateOfBirth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="gender">Giới tính</label>
                   <select
                     id="gender"
@@ -201,6 +222,39 @@ const ProfilePage: React.FC = () => {
                     <option value="MALE">Nam</option>
                     <option value="FEMALE">Nữ</option>
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="faculty">Khoa</label>
+                  <input
+                    id="faculty"
+                    type="text"
+                    value={faculty}
+                    onChange={(e) => setFaculty(e.target.value)}
+                    placeholder="VD: Công nghệ thông tin"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="major">Chuyên ngành</label>
+                  <input
+                    id="major"
+                    type="text"
+                    value={major}
+                    onChange={(e) => setMajor(e.target.value)}
+                    placeholder="VD: Kỹ thuật phần mềm"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="course">Khóa / Lớp học</label>
+                  <input
+                    id="course"
+                    type="text"
+                    value={course}
+                    onChange={(e) => setCourse(e.target.value)}
+                    placeholder="VD: K17"
+                  />
                 </div>
 
                 <button

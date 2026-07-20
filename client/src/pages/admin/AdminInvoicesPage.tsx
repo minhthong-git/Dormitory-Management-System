@@ -102,15 +102,6 @@ const AdminInvoicesPage: React.FC = () => {
     }
   };
 
-  const handleDeleteInvoice = async (id: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa hóa đơn này? Thao tác không thể hoàn tác.')) return;
-    try {
-      await invoiceService.delete(id);
-      fetchInvoices();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Không thể xóa hóa đơn');
-    }
-  };
 
   const handleCreateInvoiceSubmit = async (formData: any) => {
     setIsSubmitting(true);
@@ -343,7 +334,6 @@ const AdminInvoicesPage: React.FC = () => {
             isAdmin={true}
             onViewDetail={(id) => navigate(`/invoices/${id}`)}
             onMarkAsPaid={handleMarkAsPaid}
-            onDelete={handleDeleteInvoice}
             currentPage={page}
             totalPages={totalPages}
             onPageChange={(p) => setPage(p)}

@@ -20,8 +20,11 @@ const STATUS_CLASS: Record<ContractStatus, string> = {
   PENDING: 'badge--male',
 };
 
-const fmtDate = (iso: string) =>
-  iso ? new Date(iso).toLocaleDateString('vi-VN') : '—';
+const fmtDate = (iso: string) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+};
 
 const fmtCurrency = (n: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
@@ -68,9 +71,10 @@ const AdminContractsPage: React.FC = () => {
   const LIMIT = 15;
 
   // ── Modal modes ────────────────────────────────────────────────
-  type ModalMode = 'create' | 'terminate' | 'transfer' | 'checkin' | 'checkout' | 'edit' | 'extend' | 'delete' | null;
+  type ModalMode = 'create' | 'terminate' | 'transfer' | 'checkin' | 'checkout' | 'edit' | 'extend' | 'delete' | 'student_info' | 'view' | null;
   const [modal, setModal] = useState<ModalMode>(null);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   // ── Forms ──────────────────────────────────────────────────────
   const [createForm, setCreateForm] = useState<CreateFormData>(EMPTY_CREATE);
@@ -123,6 +127,7 @@ const AdminContractsPage: React.FC = () => {
   const closeModal = () => {
     setModal(null);
     setSelectedContract(null);
+    setSelectedStudent(null);
     setCreateForm(EMPTY_CREATE);
     setTransferForm({ studentId: '', newBedId: '', reason: '' });
     setEditForm({ price: '', deposit: '', monthlyFee: '' });
@@ -414,8 +419,15 @@ const AdminContractsPage: React.FC = () => {
                         </td>
                         <td>
                           {student ? (
-                            <div>
-                              <div style={{ fontWeight: 600 }}>{student.fullName}</div>
+                            <div 
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => {
+                                const fullStudent = students.find(s => s.id === contract.studentId) || student;
+                                setSelectedStudent(fullStudent);
+                                setModal('student_info');
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{student.fullName}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{student.studentCode}</div>
                             </div>
                           ) : (
@@ -442,6 +454,15 @@ const AdminContractsPage: React.FC = () => {
                         </td>
                         <td>
                           <div className="action-buttons">
+                            <button
+                              className="btn btn-sm btn-outline"
+                              onClick={() => {
+                                setSelectedContract(contract);
+                                setModal('view');
+                              }}
+                            >
+                              Xem
+                            </button>
                             {status === 'ACTIVE' && (
                               <>
                                 <button
@@ -519,18 +540,6 @@ const AdminContractsPage: React.FC = () => {
                                 </button>
                               </>
                             )}
-                            {status !== 'ACTIVE' && (
-                              <button
-                                className="btn btn-sm btn-danger-outline"
-                                onClick={() => {
-                                  setSelectedContract(contract);
-                                  setFormError('');
-                                  setModal('delete');
-                                }}
-                              >
-                                Xóa
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -555,6 +564,217 @@ const AdminContractsPage: React.FC = () => {
           </>
         )}
       </main>
+
+      {/* ════════════════════════════════════════════════════════ */}
+      {/* ── Student Info Modal ────────────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════ */}
+      {modal === 'student_info' && selectedStudent && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content modal-content--sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Thông tin Sinh viên</h2>
+              <button className="modal-close" onClick={closeModal}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Họ và tên:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>{selectedStudent.fullName}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>MSSV:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>{selectedStudent.studentCode || selectedStudent.studentId}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Giới tính:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>
+                    {selectedStudent.gender === 'MALE' ? 'Nam' : selectedStudent.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Ngày sinh:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>
+                    {selectedStudent.dateOfBirth ? fmtDate(selectedStudent.dateOfBirth) : 'Chưa cập nhật'}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Số điện thoại:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>{selectedStudent.phone || 'Chưa cập nhật'}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Email:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>{selectedStudent.email}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Khoa/Chuyên ngành:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>
+                    {selectedStudent.faculty || selectedStudent.major ? `${selectedStudent.faculty || ''} ${selectedStudent.major ? `- ${selectedStudent.major}` : ''}` : 'Chưa cập nhật'}
+                  </strong>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-primary" onClick={closeModal}>Đóng</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════ */}
+      {/* ── View Contract Modal ─────────────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════ */}
+      {modal === 'view' && selectedContract && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" style={{ maxWidth: '800px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Chi tiết Hợp đồng</h2>
+              <button className="modal-close" onClick={closeModal}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative" id="printable-contract" style={{ backgroundColor: '#0f172a', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+                <div className="h-2 bg-gradient-to-r from-primary via-secondary to-purple-500" style={{ backgroundImage: 'linear-gradient(to right, #6366f1, #a855f7, #ec4899)', height: '8px' }} />
+                
+                <div className="p-8 sm:p-12 space-y-8" style={{ padding: '2rem 3rem' }}>
+                  {/* Header Brand */}
+                  <div className="flex flex-col sm:flex-row justify-between gap-6 pb-6 border-b border-slate-800" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #1e293b', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
+                    <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white text-xl font-black" style={{ width: '3rem', height: '3rem', borderRadius: '0.75rem', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.25rem', fontWeight: 900 }}>
+                        D
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white leading-tight" style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, color: 'white' }}>DormMS</h2>
+                        <p className="text-xs text-slate-500 font-medium" style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Hệ thống Quản lý Ký túc xá</p>
+                      </div>
+                    </div>
+                    <div className="sm:text-right space-y-1" style={{ textAlign: 'right' }}>
+                      <span className={`badge ${STATUS_CLASS[selectedContract.status as ContractStatus] ?? 'badge--other'}`}>
+                        {STATUS_LABEL[selectedContract.status as ContractStatus] ?? selectedContract.status}
+                      </span>
+                      <p className="text-xxs text-slate-500 font-mono tracking-wider pt-1" style={{ fontSize: '0.7rem', color: '#64748b', fontFamily: 'monospace', marginTop: '0.5rem' }}>
+                        MÃ HĐ: {selectedContract.id.toUpperCase()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Service provider & dates */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', fontSize: '0.875rem', marginBottom: '2rem' }}>
+                    <div className="space-y-1.5" style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block" style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Đơn vị cung cấp</span>
+                      <p className="font-bold text-white" style={{ margin: 0, fontWeight: 'bold' }}>Ban Quản lý Ký túc xá DormMS</p>
+                      <p className="text-slate-400 text-xs" style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>123 Đường 3/2, Quận Ninh Kiều, Cần Thơ</p>
+                      <p className="text-slate-400 text-xs" style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>Hotline: 0292.123.456 · Email: support@dormitory.com</p>
+                    </div>
+                    
+                    <div className="space-y-1 bg-slate-850/40 p-4 rounded-2xl border border-slate-800 text-xs" style={{ backgroundColor: 'rgba(15, 23, 42, 0.4)', padding: '1rem', borderRadius: '1rem', border: '1px solid #1e293b', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div className="flex justify-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="text-slate-400" style={{ color: '#94a3b8' }}>Ngày tạo HĐ:</span>
+                        <span className="font-semibold text-slate-300" style={{ color: '#cbd5e1' }}>{fmtDate(selectedContract.createdAt)}</span>
+                      </div>
+                      <div className="flex justify-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="text-slate-400" style={{ color: '#94a3b8' }}>Ngày bắt đầu:</span>
+                        <span className="font-semibold text-slate-300" style={{ color: '#cbd5e1' }}>{fmtDate(selectedContract.startDate)}</span>
+                      </div>
+                      <div className="flex justify-between" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="text-slate-400" style={{ color: '#94a3b8' }}>Ngày kết thúc:</span>
+                        <span className="font-semibold text-rose-400" style={{ color: '#fb7185' }}>{fmtDate(selectedContract.endDate)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tenant Information Details */}
+                  <div className="bg-slate-850/20 border border-slate-800 rounded-2xl p-6 space-y-4" style={{ backgroundColor: 'rgba(15, 23, 42, 0.2)', border: '1px solid #1e293b', borderRadius: '1rem', padding: '1.5rem', marginBottom: '2rem' }}>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4" style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', margin: 0 }}>Thông tin khách thuê</h3>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Sinh viên</p>
+                        <p className="font-bold text-white text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>{selectedContract.student?.fullName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Mã sinh viên</p>
+                        <p className="font-bold text-white text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>{selectedContract.student?.studentCode || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Khoa / Chuyên ngành</p>
+                        <p className="font-bold text-white text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>
+                          {selectedContract.student?.faculty || selectedContract.student?.major ? `${selectedContract.student?.faculty || ''} ${selectedContract.student?.major ? `- ${selectedContract.student?.major}` : ''}` : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Khóa / Lớp học</p>
+                        <p className="font-bold text-white text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>{selectedContract.student?.course || 'N/A'}</p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-700/50 pt-4 grid grid-cols-2 md:grid-cols-4 gap-6" style={{ borderTop: '1px solid rgba(51, 65, 85, 0.5)', paddingTop: '1rem', marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Phòng</p>
+                        <p className="font-bold text-indigo-400 text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#818cf8', margin: 0 }}>Phòng {selectedContract.bed?.room?.roomNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Giường thuê</p>
+                        <p className="font-bold text-indigo-400 text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#818cf8', margin: 0 }}>Giường #{selectedContract.bed?.bedNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Loại phòng</p>
+                        <p className="font-bold text-white text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>{selectedContract.bed?.room?.type}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1" style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Thời hạn hợp đồng</p>
+                        <p className="font-bold text-white text-sm" style={{ fontSize: '0.875rem', fontWeight: 'bold', margin: 0 }}>3 Tháng</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Details */}
+                  <div className="overflow-hidden border border-slate-800 rounded-2xl" style={{ border: '1px solid #1e293b', borderRadius: '1rem', overflow: 'hidden', marginBottom: '2rem' }}>
+                    <table className="w-full text-left text-sm" style={{ width: '100%', textAlign: 'left', fontSize: '0.875rem', borderCollapse: 'collapse' }}>
+                      <thead className="bg-slate-800/80 text-slate-400 text-xs uppercase" style={{ backgroundColor: 'rgba(30, 41, 59, 0.8)', color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                        <tr>
+                          <th className="px-6 py-4 font-semibold" style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Khoản phí</th>
+                          <th className="px-6 py-4 font-semibold text-right" style={{ padding: '1rem 1.5rem', fontWeight: 600, textAlign: 'right' }}>Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 bg-slate-900/50" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
+                        <tr>
+                          <td className="px-6 py-4 text-slate-200" style={{ padding: '1rem 1.5rem', color: '#e2e8f0', borderTop: '1px solid rgba(30, 41, 59, 0.6)' }}>Tiền thuê (3 tháng)</td>
+                          <td className="px-6 py-4 text-slate-200 text-right font-medium" style={{ padding: '1rem 1.5rem', color: '#e2e8f0', textAlign: 'right', fontWeight: 500, borderTop: '1px solid rgba(30, 41, 59, 0.6)' }}>{fmtCurrency(selectedContract.monthlyFee)}</td>
+                        </tr>
+                        <tr>
+                          <td className="px-6 py-4 text-slate-200" style={{ padding: '1rem 1.5rem', color: '#e2e8f0', borderTop: '1px solid rgba(30, 41, 59, 0.6)' }}>Phí dịch vụ</td>
+                          <td className="px-6 py-4 text-slate-200 text-right font-medium" style={{ padding: '1rem 1.5rem', color: '#e2e8f0', textAlign: 'right', fontWeight: 500, borderTop: '1px solid rgba(30, 41, 59, 0.6)' }}>{fmtCurrency(selectedContract.deposit)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="bg-slate-800/80 px-6 py-5 border-t border-slate-700" style={{ backgroundColor: 'rgba(30, 41, 59, 0.8)', padding: '1.25rem 1.5rem', borderTop: '1px solid #334155' }}>
+                      <div className="flex justify-between items-center" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className="text-sm font-semibold text-slate-400 uppercase tracking-wider" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TỔNG THANH TOÁN KHI NHẬN PHÒNG:</span>
+                        <span className="text-xl font-black text-emerald-400" style={{ fontSize: '1.25rem', fontWeight: 900, color: '#34d399' }}>{fmtCurrency((selectedContract.monthlyFee || 0) + (selectedContract.deposit || 0))}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Signatures */}
+                  <div className="grid grid-cols-2 pt-8 mt-8 border-t border-slate-800" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', paddingTop: '2rem', marginTop: '2rem', borderTop: '1px solid #1e293b' }}>
+                    <div className="text-center" style={{ textAlign: 'center' }}>
+                      <p className="font-bold text-slate-300 mb-1" style={{ fontWeight: 'bold', color: '#cbd5e1', margin: '0 0 0.25rem 0' }}>Khách thuê phòng</p>
+                      <p className="text-xs text-slate-500 mb-16" style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4rem' }}>(Ký và ghi rõ họ tên)</p>
+                    </div>
+                    <div className="text-center" style={{ textAlign: 'center' }}>
+                      <p className="font-bold text-slate-300 mb-1" style={{ fontWeight: 'bold', color: '#cbd5e1', margin: '0 0 0.25rem 0' }}>Đại diện Ban Quản lý</p>
+                      <p className="text-xs text-slate-500 mb-16" style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4rem' }}>(Ký, đóng dấu)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button className="btn btn-outline" onClick={() => window.print()}>🖨️ In Hợp đồng</button>
+              <button className="btn btn-primary" onClick={closeModal}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ════════════════════════════════════════════════════════ */}
       {/* ── Create Contract Modal ────────────────────────────── */}

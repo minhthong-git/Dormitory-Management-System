@@ -338,7 +338,7 @@ const AdminAssetsPage: React.FC = () => {
 
           {(searchQuery || filterRoomId || filterStatus || filterType) && (
             <div className="filter-input-group" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn-cancel" onClick={handleResetFilters}>
+              <button className="btn btn-outline" onClick={handleResetFilters}>
                 Đặt lại lọc
               </button>
             </div>
@@ -453,11 +453,11 @@ const AdminAssetsPage: React.FC = () => {
 
       {/* Modal Form Thêm/Sửa */}
       {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-card">
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">{editingId ? 'Cập nhật tài sản' : 'Thêm tài sản mới'}</h2>
-              <button className="modal-close-btn" onClick={() => setIsModalOpen(false)}>
+              <button className="modal-close" onClick={() => setIsModalOpen(false)}>
                 &times;
               </button>
             </div>
@@ -468,7 +468,7 @@ const AdminAssetsPage: React.FC = () => {
                     <label htmlFor="form-roomId">Chọn phòng gắn liền</label>
                     <select
                       id="form-roomId"
-                      className="form-input"
+                      className="form-control"
                       value={formData.roomId}
                       onChange={e => setFormData({ ...formData, roomId: e.target.value })}
                       required
@@ -488,7 +488,7 @@ const AdminAssetsPage: React.FC = () => {
                       <input
                         id="form-code"
                         type="text"
-                        className="form-input"
+                        className="form-control"
                         value={formData.code}
                         onChange={e => setFormData({ ...formData, code: e.target.value })}
                         placeholder="Ví dụ: AC-P101-01"
@@ -501,7 +501,7 @@ const AdminAssetsPage: React.FC = () => {
                       <input
                         id="form-name"
                         type="text"
-                        className="form-input"
+                        className="form-control"
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Ví dụ: Máy lạnh, Bàn học..."
@@ -515,7 +515,7 @@ const AdminAssetsPage: React.FC = () => {
                       <label htmlFor="form-type">Loại thiết bị</label>
                       <select
                         id="form-type"
-                        className="form-input"
+                        className="form-control"
                         value={formData.type}
                         onChange={e => setFormData({ ...formData, type: e.target.value })}
                       >
@@ -530,7 +530,7 @@ const AdminAssetsPage: React.FC = () => {
                       <label htmlFor="form-status">Trạng thái ban đầu</label>
                       <select
                         id="form-status"
-                        className="form-input"
+                        className="form-control"
                         value={formData.status}
                         onChange={e => setFormData({ ...formData, status: e.target.value })}
                       >
@@ -546,7 +546,7 @@ const AdminAssetsPage: React.FC = () => {
                     <label htmlFor="form-description">Mô tả/Chi tiết</label>
                     <textarea
                       id="form-description"
-                      className="form-input"
+                      className="form-control"
                       style={{ resize: 'vertical', minHeight: '80px' }}
                       value={formData.description}
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -555,11 +555,11 @@ const AdminAssetsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="form-actions">
-                <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setIsModalOpen(false)}>
                   Hủy bỏ
                 </button>
-                <button type="submit" className="btn-submit">
+                <button type="submit" className="btn btn-primary">
                   Lưu lại
                 </button>
               </div>

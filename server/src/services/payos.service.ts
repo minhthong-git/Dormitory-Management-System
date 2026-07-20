@@ -41,15 +41,15 @@ export class PayOSService {
   /**
    * Lấy thông tin payment từ PayOS theo orderCode
    */
-  static async getPaymentInfo(orderCode: number) {
-    return payos.paymentRequests.get(orderCode);
+  static async getPaymentInfo(orderCode: number | bigint) {
+    return payos.paymentRequests.get(Number(orderCode));
   }
 
   /**
    * Hủy payment link
    */
-  static async cancelPaymentLink(orderCode: number, reason?: string) {
-    return payos.paymentRequests.cancel(orderCode, reason);
+  static async cancelPaymentLink(orderCode: number | bigint, reason?: string) {
+    return payos.paymentRequests.cancel(Number(orderCode), reason);
   }
 
   /**

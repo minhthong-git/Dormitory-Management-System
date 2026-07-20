@@ -245,6 +245,28 @@ export class BillingService {
     // Trigger notification on PAID (fire-and-forget)
     if (status === PaymentStatus.PAID) {
       notificationService.onInvoicePaid(invoiceId).catch(() => {});
+      
+      // If this is the initial payment for an AWAITING_PAYMENT contract, activate it
+      if (invoice.contractId) {
+        const contract = await prisma.contract.findUnique({ 
+          where: { id: invoice.contractId },
+          include: { bed: { include: { room: true } } }
+        });
+        
+        if (contract && contract.status === 'AWAITING_PAYMENT') {
+          await prisma.$transaction([
+            prisma.contract.update({ where: { id: contract.id }, data: { status: 'ACTIVE' } }),
+            prisma.bed.update({ where: { id: contract.bedId }, data: { status: 'OCCUPIED' } }),
+            prisma.room.update({
+              where: { id: contract.bed.roomId },
+              data: {
+                currentOccupancy: { increment: 1 },
+                status: contract.bed.room.currentOccupancy + 1 >= contract.bed.room.capacity ? 'FULL' : 'AVAILABLE',
+              },
+            }),
+          ]);
+        }
+      }
     }
 
     return updated;

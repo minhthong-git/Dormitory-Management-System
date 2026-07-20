@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { invoiceService } from '@/services/invoiceService';
 import { utilityService } from '@/services/utilityService';
 import { paymentService } from '@/services/paymentService';
+import { contractApi } from '@/api/contract.api';
 import { useAuth } from '@/context/AuthContext';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import './InvoiceDetailPage.css';
@@ -18,14 +19,7 @@ const InvoiceDetailPage: React.FC = () => {
 
   // Payment states
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [showPayModal, setShowPayModal] = useState(false);
   const [showManualPayModal, setShowManualPayModal] = useState(false);
-  const [payosLink, setPayosLink] = useState<{
-    checkoutUrl: string;
-    qrCode: string;
-    orderCode: number;
-  } | null>(null);
-  const [pollingIntervalId, setPollingIntervalId] = useState<number | null>(null);
 
   const fetchInvoiceAndUtility = async () => {
     if (!id) return;
@@ -63,58 +57,17 @@ const InvoiceDetailPage: React.FC = () => {
     setError(null);
     try {
       const res = await paymentService.create(invoice.id);
-      setPayosLink(res.data.data);
-      setShowPayModal(true);
-      
-      // Start polling for status
-      const orderCode = res.data.data.orderCode;
-      const intervalId = window.setInterval(async () => {
-        try {
-          const statusRes = await paymentService.getStatus(orderCode);
-          if (statusRes.data.data.status === 'SUCCESS') {
-            window.clearInterval(intervalId);
-            setPollingIntervalId(null);
-            setPayosLink(null);
-            setShowPayModal(false);
-            alert('Thanh toán qua PayOS thành công!');
-            fetchInvoiceAndUtility();
-          } else if (['CANCELLED', 'FAILED', 'EXPIRED'].includes(statusRes.data.data.status)) {
-            window.clearInterval(intervalId);
-            setPollingIntervalId(null);
-            setPayosLink(null);
-            setShowPayModal(false);
-            alert(`Thanh toán thất bại hoặc đã bị hủy (Trạng thái: ${statusRes.data.data.status})`);
-            fetchInvoiceAndUtility();
-          }
-        } catch (e) {
-          console.error('Lỗi khi kiểm tra trạng thái thanh toán:', e);
-        }
-      }, 3000);
-      
-      setPollingIntervalId(intervalId);
+      if (res.data?.data?.checkoutUrl) {
+        window.location.href = res.data.data.checkoutUrl;
+      } else {
+        alert('Không tìm thấy liên kết thanh toán. Vui lòng thử lại.');
+      }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Không thể tạo liên kết thanh toán PayOS');
     } finally {
       setIsProcessingPayment(false);
     }
   };
-
-  const handleClosePayModal = () => {
-    if (pollingIntervalId) {
-      window.clearInterval(pollingIntervalId);
-      setPollingIntervalId(null);
-    }
-    setPayosLink(null);
-    setShowPayModal(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalId) {
-        window.clearInterval(pollingIntervalId);
-      }
-    };
-  }, [pollingIntervalId]);
 
   const handleManualPay = async () => {
     if (!invoice) return;
@@ -171,6 +124,19 @@ const InvoiceDetailPage: React.FC = () => {
   const isPaid = invoice.paymentStatus === 'PAID';
   const isStudent = user?.role === 'STUDENT';
 
+  const handleCancelContract = async () => {
+    if (!invoice?.contractId) return;
+    if (window.confirm('Bạn có chắc chắn muốn hủy yêu cầu đặt phòng này? Mọi thông tin hợp đồng và hóa đơn chờ thanh toán sẽ bị hủy.')) {
+      try {
+        await contractApi.cancel(invoice.contractId);
+        alert('Hủy yêu cầu thành công!');
+        navigate('/rooms');
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Có lỗi xảy ra khi hủy yêu cầu');
+      }
+    }
+  };
+
   return (
     <div className="invoice-detail-page max-w-4xl mx-auto px-4 py-8 space-y-6">
       {/* Detail actions panel */}
@@ -196,13 +162,23 @@ const InvoiceDetailPage: React.FC = () => {
           </button>
           {!isPaid && (
             isStudent ? (
-              <button
-                onClick={handlePayOS}
-                disabled={isProcessingPayment}
-                className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-55"
-              >
-                💳 Thanh toán PayOS
-              </button>
+              <div className="flex gap-3">
+                {invoice.contract?.status === 'AWAITING_PAYMENT' && (
+                  <button
+                    onClick={handleCancelContract}
+                    className="px-5 py-2 bg-transparent border-2 border-slate-700 hover:border-danger text-slate-300 hover:text-danger rounded-xl text-sm font-bold transition-all active:scale-95"
+                  >
+                    Hủy đăng ký phòng
+                  </button>
+                )}
+                <button
+                  onClick={handlePayOS}
+                  disabled={isProcessingPayment}
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-55"
+                >
+                  💳 Thanh toán PayOS
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => setShowManualPayModal(true)}
@@ -276,21 +252,51 @@ const InvoiceDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
               <div className="space-y-1">
                 <span className="text-slate-500 block">Sinh viên</span>
-                <span className="font-bold text-white">{invoice.contract?.user?.fullName || 'N/A'}</span>
+                <span className="font-bold text-white">{(invoice.contract as any)?.user?.fullName || invoice.contract?.student?.fullName || 'N/A'}</span>
               </div>
               <div className="space-y-1">
                 <span className="text-slate-500 block">Mã sinh viên</span>
-                <span className="font-bold text-white">{invoice.contract?.user?.studentId || 'N/A'}</span>
+                <span className="font-bold text-white">{(invoice.contract as any)?.user?.studentId || invoice.contract?.student?.studentCode || 'N/A'}</span>
               </div>
               <div className="space-y-1">
                 <span className="text-slate-500 block">Số điện thoại</span>
-                <span className="font-bold text-white">{invoice.contract?.user?.phone || 'N/A'}</span>
+                <span className="font-bold text-white">{(invoice.contract as any)?.user?.phone || invoice.contract?.student?.phone || 'N/A'}</span>
               </div>
               <div className="space-y-1">
                 <span className="text-slate-500 block">Số phòng</span>
                 <span className="font-bold text-primary">Phòng {invoice.room?.roomNumber || 'N/A'}</span>
               </div>
+              <div className="space-y-1">
+                <span className="text-slate-500 block">Chuyên ngành</span>
+                <span className="font-bold text-white">{invoice.contract?.student?.major || 'N/A'}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-slate-500 block">Khóa / Lớp học</span>
+                <span className="font-bold text-white">{invoice.contract?.student?.course || 'N/A'}</span>
+              </div>
             </div>
+            {invoice.contract && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs mt-4 pt-4 border-t border-slate-700/50">
+                <div className="space-y-1">
+                  <span className="text-slate-500 block">Giường thuê</span>
+                  <span className="font-bold text-primary">
+                    Giường #{invoice.contract.bed?.bedNumber || 'N/A'}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-slate-500 block">Loại phòng</span>
+                  <span className="font-bold text-white">
+                    {invoice.contract.room?.type === 'STANDARD' ? 'Tiêu chuẩn' : invoice.contract.room?.type === 'LARGE' ? 'Phòng lớn' : invoice.contract.room?.type === 'SMALL' ? 'Phòng nhỏ' : invoice.contract.room?.type || 'N/A'}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-slate-500 block">Thời hạn hợp đồng</span>
+                  <span className="font-bold text-white">
+                    {invoice.contract.startDate ? new Date(invoice.contract.startDate).toLocaleDateString('vi-VN') : 'N/A'} - {invoice.contract.endDate ? new Date(invoice.contract.endDate).toLocaleDateString('vi-VN') : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Charges Table */}
@@ -312,7 +318,7 @@ const InvoiceDetailPage: React.FC = () => {
                   <td className="px-6 py-4 font-semibold text-white">Tiền phòng ở</td>
                   <td className="px-6 py-4 text-center text-slate-600">—</td>
                   <td className="px-6 py-4 text-center text-slate-600">—</td>
-                  <td className="px-6 py-4 text-center">1 tháng</td>
+                  <td className="px-6 py-4 text-center">{invoice.contractId ? '3 tháng' : '1 tháng'}</td>
                   <td className="px-6 py-4 text-right">{invoice.roomFee.toLocaleString('vi-VN')} ₫</td>
                   <td className="px-6 py-4 text-right font-bold text-white">
                     {invoice.roomFee.toLocaleString('vi-VN')} ₫
@@ -347,10 +353,12 @@ const InvoiceDetailPage: React.FC = () => {
                   </tr>
                 )}
 
-                {/* Service Charge */}
+                {/* Service Charge / Deposit */}
                 {invoice.serviceFee > 0 && (
                   <tr>
-                    <td className="px-6 py-4 font-semibold text-white">Phí quản lý & dịch vụ</td>
+                    <td className="px-6 py-4 font-semibold text-white">
+                      Phí dịch vụ
+                    </td>
                     <td className="px-6 py-4 text-center text-slate-600">—</td>
                     <td className="px-6 py-4 text-center text-slate-600">—</td>
                     <td className="px-6 py-4 text-center">Cố định</td>
@@ -400,63 +408,6 @@ const InvoiceDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Pay QR Modal (PayOS) */}
-      {showPayModal && payosLink && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-              <h3 className="text-lg font-bold text-white">Quét mã QR thanh toán</h3>
-              <button onClick={handleClosePayModal} className="text-2xl text-slate-500 hover:text-white transition-colors">
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 text-center space-y-6">
-              <div className="space-y-1">
-                <span className="text-xs text-slate-400 font-semibold block uppercase">Cổng thanh toán tự động PayOS</span>
-                <span className="text-3xl font-extrabold text-primary">
-                  {invoice.totalAmount.toLocaleString('vi-VN')} ₫
-                </span>
-              </div>
-
-              {/* QR Code */}
-              <div className="w-52 h-52 bg-white rounded-2xl mx-auto flex items-center justify-center p-2 border border-slate-700/50 shadow-md">
-                {payosLink.qrCode ? (
-                  <img src={payosLink.qrCode} alt="VietQR PayOS" className="w-full h-full object-contain" />
-                ) : (
-                  <div className="text-black font-semibold text-sm">QR Code not available</div>
-                )}
-              </div>
-
-              <div className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto space-y-3">
-                <p>Mở ứng dụng ngân hàng quét mã VietQR để thanh toán nhanh.</p>
-                <p className="text-slate-500">Mã đơn hàng: <span className="font-mono text-slate-400 font-bold">{payosLink.orderCode}</span></p>
-              </div>
-
-              <div>
-                <a
-                  href={payosLink.checkoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold transition-all shadow-md"
-                >
-                  🔗 Mở trang thanh toán PayOS
-                </a>
-              </div>
-            </div>
-
-            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-end">
-              <button
-                type="button"
-                onClick={handleClosePayModal}
-                className="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Manual Confirmation Modal (Staff/Admin) */}
       {showManualPayModal && (

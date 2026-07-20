@@ -82,15 +82,6 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                           ✓ Thu tiền
                         </button>
                       )}
-                      {isAdmin && !isPaid && onDelete && (
-                        <button
-                          onClick={() => onDelete(inv.id)}
-                          className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all"
-                          title="Xóa hóa đơn"
-                        >
-                          🗑️
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>

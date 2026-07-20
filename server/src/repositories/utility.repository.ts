@@ -92,10 +92,16 @@ export class UtilityRepository {
 
     if (filters.userId) {
       where.room = {
-        contracts: {
+        beds: {
           some: {
-            userId: filters.userId,
-            status: 'ACTIVE',
+            contracts: {
+              some: {
+                student: {
+                  userId: filters.userId
+                },
+                status: { in: ['ACTIVE', 'AWAITING_PAYMENT'] }
+              }
+            }
           }
         }
       };

@@ -15,7 +15,9 @@ import {
   deleteContract,
   bookBed,
   approveContract,
-  rejectContract
+  rejectContract,
+  renewContract,
+  cancelContract
 } from '@/controllers/contract.controller';
 
 const router = Router();
@@ -54,8 +56,14 @@ router.post('/', verifyJWT, requireRoles('ADMIN', 'STAFF'), createContractValida
 // POST   /api/contracts/book   — STUDENT tự đặt phòng
 router.post('/book', verifyJWT, bookBed);
 
+// POST   /api/contracts/:id/renew — STUDENT gia hạn phòng
+router.post('/:id/renew', verifyJWT, renewContract);
+
 // PATCH  /api/contracts/:id/approve — ADMIN/STAFF duyệt phòng
 router.patch('/:id/approve', verifyJWT, requireRoles('ADMIN', 'STAFF'), approveContract);
+
+// PATCH  /api/contracts/:id/cancel  — STUDENT tự hủy đăng ký
+router.patch('/:id/cancel', verifyJWT, cancelContract);
 
 // PATCH  /api/contracts/:id/reject  — ADMIN/STAFF từ chối phòng
 router.patch('/:id/reject', verifyJWT, requireRoles('ADMIN', 'STAFF'), rejectContract);

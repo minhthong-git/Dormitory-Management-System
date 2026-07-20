@@ -16,15 +16,8 @@ const StudentInvoicesPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const limit = 10;
 
-  // Payment mock state
-  const [payingInvoice, setPayingInvoice] = useState<any | null>(null);
+  // Payment state
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [payosLink, setPayosLink] = useState<{
-    checkoutUrl: string;
-    qrCode: string;
-    orderCode: number;
-  } | null>(null);
-  const [pollingIntervalId, setPollingIntervalId] = useState<number | null>(null);
 
   const fetchInvoices = async () => {
     setIsLoading(true);
@@ -54,57 +47,18 @@ const StudentInvoicesPage: React.FC = () => {
     setIsProcessingPayment(true);
     try {
       const res = await paymentService.create(invoice.id);
-      setPayingInvoice(invoice);
-      setPayosLink(res.data.data);
-      
-      const orderCode = res.data.data.orderCode;
-      const intervalId = window.setInterval(async () => {
-        try {
-          const statusRes = await paymentService.getStatus(orderCode);
-          if (statusRes.data.data.status === 'SUCCESS') {
-            window.clearInterval(intervalId);
-            setPollingIntervalId(null);
-            setPayosLink(null);
-            setPayingInvoice(null);
-            alert('Thanh toán qua PayOS thành công!');
-            fetchInvoices();
-          } else if (['CANCELLED', 'FAILED', 'EXPIRED'].includes(statusRes.data.data.status)) {
-            window.clearInterval(intervalId);
-            setPollingIntervalId(null);
-            setPayosLink(null);
-            setPayingInvoice(null);
-            alert(`Thanh toán thất bại hoặc đã bị hủy (Trạng thái: ${statusRes.data.data.status})`);
-            fetchInvoices();
-          }
-        } catch (e) {
-          console.error('Lỗi kiểm tra trạng thái thanh toán:', e);
-        }
-      }, 3000);
-      
-      setPollingIntervalId(intervalId);
+      if (res.data?.data?.checkoutUrl) {
+        // Trực tiếp chuyển hướng sang trang thanh toán của PayOS
+        window.location.href = res.data.data.checkoutUrl;
+      } else {
+        alert('Không tìm thấy liên kết thanh toán. Vui lòng thử lại.');
+      }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Không thể tạo liên kết thanh toán PayOS');
     } finally {
       setIsProcessingPayment(false);
     }
   };
-
-  const handleClosePaymentModal = () => {
-    if (pollingIntervalId) {
-      window.clearInterval(pollingIntervalId);
-      setPollingIntervalId(null);
-    }
-    setPayosLink(null);
-    setPayingInvoice(null);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalId) {
-        window.clearInterval(pollingIntervalId);
-      }
-    };
-  }, [pollingIntervalId]);
 
   const totalPages = Math.ceil(totalCount / limit);
 
@@ -289,64 +243,6 @@ const StudentInvoicesPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* PayOS QR Code Modal */}
-      {payingInvoice && payosLink && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-850 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-up">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-              <h3 className="text-lg font-bold text-white">Quét mã QR thanh toán</h3>
-              <button onClick={handleClosePaymentModal} className="text-2xl text-slate-500 hover:text-white transition-colors">
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 text-center space-y-6">
-              <div className="space-y-1">
-                <span className="text-xs text-slate-400 font-semibold block uppercase">Cổng thanh toán tự động PayOS</span>
-                <span className="text-3xl font-extrabold text-primary">
-                  {payingInvoice.totalAmount.toLocaleString('vi-VN')} ₫
-                </span>
-              </div>
-
-              {/* QR Code */}
-              <div className="w-52 h-52 bg-white rounded-2xl mx-auto flex items-center justify-center p-2 border border-slate-700/50 shadow-md">
-                {payosLink.qrCode ? (
-                  <img src={payosLink.qrCode} alt="VietQR PayOS" className="w-full h-full object-contain" />
-                ) : (
-                  <div className="text-black font-semibold text-sm">QR Code not available</div>
-                )}
-              </div>
-
-              <div className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed space-y-3">
-                <p>Mở ứng dụng ngân hàng quét mã VietQR để thanh toán nhanh.</p>
-                <p className="text-slate-500">Mã đơn hàng: <span className="font-mono text-slate-400 font-bold">{payosLink.orderCode}</span></p>
-              </div>
-
-              <div>
-                <a
-                  href={payosLink.checkoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold transition-all shadow-md"
-                >
-                  🔗 Mở trang thanh toán PayOS
-                </a>
-              </div>
-            </div>
-
-            <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleClosePaymentModal}
-                className="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-white rounded-xl transition-colors"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -40,11 +40,9 @@ const ADMIN_NAV: NavItem[] = [
   { label: 'Quản lý Hợp đồng',       to: '/admin/contracts',     icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6' },
   { label: 'Quản lý Sinh viên',      to: '/admin/students',      icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
   { label: 'Hóa đơn',                to: '/admin/invoices',      icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8' },
-  { label: 'Thanh toán',             to: '/admin/payments',      icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.86 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z' },
   { label: 'Thông báo',              to: '/admin/notifications', icon: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0', badge: 3 },
   { label: 'Yêu cầu Sửa chữa',      to: '/admin/maintenance',   icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z' },
   { label: 'Báo cáo & Thống kê',    to: '/admin/reports',       icon: 'M18 20V10M12 20V4M6 20v-6' },
-  { label: 'Cài đặt',                to: '/admin/settings',      icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
 ];
 
 const STUDENT_NAV: NavItem[] = [
@@ -76,14 +74,20 @@ const Sidebar: React.FC<SidebarProps> = ({
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'STAFF';
   
   const navItems = React.useMemo(() => {
-    const items = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+    let items = isAdmin ? ADMIN_NAV : STUDENT_NAV;
+    
+    // Hide 'Báo cáo & Thống kê' for STAFF
+    if (user?.role === 'STAFF') {
+      items = items.filter(item => item.label !== 'Báo cáo & Thống kê');
+    }
+
     return items.map((item) => {
       if (item.label === 'Thông báo') {
         return { ...item, badge: unreadCount };
       }
       return item;
     });
-  }, [isAdmin, unreadCount]);
+  }, [isAdmin, user?.role, unreadCount]);
 
   const handleLogout = async () => {
     await logout();

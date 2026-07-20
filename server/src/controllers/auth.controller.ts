@@ -250,6 +250,8 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
             status: true,
             faculty: true,
             major: true,
+            course: true,
+            dateOfBirth: true,
           }
         }
       },
@@ -267,7 +269,7 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const userId = req.user?.sub;
     if (!userId) throw new AppError('Không xác định được người dùng', 401);
 
-    const { fullName, phone, avatarUrl, gender } = req.body;
+    const { fullName, phone, avatarUrl, gender, dateOfBirth, major, faculty, course } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('Người dùng không tồn tại', 404);
@@ -279,6 +281,10 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
           fullName: fullName || user.fullName,
           phone: phone || user.phone || '',
           gender: gender || undefined,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          major: major || undefined,
+          faculty: faculty || undefined,
+          course: course || undefined,
         },
         create: {
           userId: user.id,
@@ -287,6 +293,10 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
           email: user.email,
           phone: phone || user.phone || '',
           gender: gender || 'OTHER',
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+          major: major || null,
+          faculty: faculty || null,
+          course: course || null,
           status: 'ACTIVE',
         },
       });
@@ -311,6 +321,8 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
             status: true,
             faculty: true,
             major: true,
+            course: true,
+            dateOfBirth: true,
           }
         }
       },

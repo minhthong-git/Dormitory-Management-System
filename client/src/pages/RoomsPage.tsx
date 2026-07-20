@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { contractApi } from '@/api/contract.api';
 import { bedApi } from '@/api/bed.api';
 import { roomApi } from '@/api/room.api';
+import { assetApi } from '@/api/asset.api';
 import { useNavigate } from 'react-router-dom';
-import type { Contract, Bed, Room } from '@/types';
+import type { Contract, Bed, Room, Asset } from '@/types';
 import './RoomsPage.css';
 
 const RoomsPage: React.FC = () => {
@@ -11,6 +12,7 @@ const RoomsPage: React.FC = () => {
   
   const [contract, setContract] = useState<Contract | null>(null);
   const [roomBeds, setRoomBeds] = useState<Bed[]>([]);
+  const [roomAssets, setRoomAssets] = useState<Asset[]>([]);
   
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [isProfileMissing, setIsProfileMissing] = useState(false);
@@ -23,14 +25,19 @@ const RoomsPage: React.FC = () => {
       // 1. Fetch contracts
       const contractRes = await contractApi.getAll({ limit: 10 });
       const contracts = contractRes.data?.data || [];
-      const currentContract = contracts.find(c => c.status === 'ACTIVE' || c.status === 'PENDING');
+      const currentContract = contracts.find(c => c.status === 'ACTIVE' || c.status === 'PENDING' || c.status === 'AWAITING_PAYMENT');
 
       if (currentContract) {
         setContract(currentContract);
-        // Fetch beds in the room for layout
+        // Fetch beds and assets in the room for layout
         if (currentContract.bed) {
-          const bedRes = await bedApi.getAll({ roomId: currentContract.bed.roomId, limit: 50 });
+          const roomId = currentContract.bed.roomId;
+          const [bedRes, assetRes] = await Promise.all([
+            bedApi.getAll({ roomId, limit: 50 }),
+            assetApi.getAll({ roomId, limit: 100 })
+          ]);
           setRoomBeds(bedRes.data?.data || []);
+          setRoomAssets(assetRes.data?.data || []);
         }
       } else {
         setContract(null);
@@ -66,7 +73,7 @@ const RoomsPage: React.FC = () => {
       return;
     }
     
-    if (window.confirm('Bạn có chắc chắn muốn đăng ký giường này?')) {
+    if (window.confirm('Bạn có chắc chắn muốn đăng ký giường này cho 1 học kỳ (3 tháng) không?')) {
       try {
         await contractApi.book({ bedId });
         alert('Gửi yêu cầu đặt phòng thành công!');
@@ -77,7 +84,37 @@ const RoomsPage: React.FC = () => {
     }
   };
 
-  const fmtDate = (iso: string) => (iso ? new Date(iso).toLocaleDateString('vi-VN') : '—');
+  const handleRenew = async () => {
+    if (!contract) return;
+    if (window.confirm('Hợp đồng của bạn sắp hết hạn. Bạn có chắc chắn muốn ưu tiên gia hạn thêm 1 học kỳ (3 tháng) không? Quá trình này sẽ tạo hóa đơn gia hạn.')) {
+      try {
+        await contractApi.renew(contract.id);
+        alert('Đã gửi yêu cầu gia hạn! Vui lòng thanh toán hóa đơn trong vòng 3 ngày.');
+        fetchMyRoom();
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Có lỗi xảy ra');
+      }
+    }
+  };
+
+  const handleCancelContract = async () => {
+    if (!contract) return;
+    if (window.confirm('Bạn có chắc chắn muốn hủy yêu cầu đặt phòng này? Mọi thông tin hợp đồng và hóa đơn chờ thanh toán sẽ bị hủy.')) {
+      try {
+        await contractApi.cancel(contract.id);
+        alert('Hủy yêu cầu thành công!');
+        fetchMyRoom();
+      } catch (err: any) {
+        alert(err.response?.data?.message || 'Có lỗi xảy ra khi hủy yêu cầu');
+      }
+    }
+  };
+
+  const fmtDate = (iso: string) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+  };
   const fmtCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
   if (isLoading) {
@@ -110,6 +147,11 @@ const RoomsPage: React.FC = () => {
           {status === 'PENDING' && (
             <div style={{ padding: '16px', backgroundColor: 'rgba(255, 193, 7, 0.15)', color: '#ffc107', borderRadius: '8px', marginBottom: '20px', border: '1px solid rgba(255, 193, 7, 0.3)' }}>
               <strong style={{ color: '#ffc107' }}>⏳ Đang chờ duyệt:</strong> Yêu cầu thuê phòng của bạn đã được gửi. Vui lòng chờ Admin xác nhận. Bạn không thể đặt thêm phòng khác lúc này.
+            </div>
+          )}
+          {status === 'AWAITING_PAYMENT' && (
+            <div style={{ padding: '16px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', borderRadius: '8px', marginBottom: '20px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+              <strong style={{ color: '#3b82f6' }}>⏳ Chờ thanh toán:</strong> Yêu cầu thuê phòng của bạn đã được duyệt. Vui lòng thanh toán hóa đơn trong thời gian 10 phút để hoàn tất đặt phòng.
             </div>
           )}
 
@@ -154,11 +196,87 @@ const RoomsPage: React.FC = () => {
                 <div className="info-item">
                   <span className="info-label">Trạng thái:</span>
                   <span className="info-value">
-                    <span className={`badge ${status === 'ACTIVE' ? 'badge--active' : 'badge--pending'}`} style={status === 'PENDING' ? { backgroundColor: '#ffc107', color: '#000' } : {}}>
-                      {status === 'ACTIVE' ? 'Đang hiệu lực' : 'Chờ duyệt'}
+                    <span className={`badge ${status === 'ACTIVE' ? 'badge--active' : 'badge--pending'}`} style={status === 'PENDING' ? { backgroundColor: '#ffc107', color: '#000' } : status === 'AWAITING_PAYMENT' ? { backgroundColor: '#3b82f6', color: '#fff' } : {}}>
+                      {status === 'ACTIVE' ? 'Đang hiệu lực' : status === 'AWAITING_PAYMENT' ? 'Chờ thanh toán' : 'Chờ duyệt'}
                     </span>
                   </span>
                 </div>
+                {(status === 'PENDING' || status === 'AWAITING_PAYMENT') && (
+                  <div className="info-item" style={{ marginTop: '16px' }}>
+                    <button className="btn btn-outline" onClick={handleCancelContract} style={{ width: '100%', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+                      Hủy đăng ký phòng
+                    </button>
+                  </div>
+                )}
+                {contract.renewalStatus === 'PRIORITY' && (
+                  <div className="info-item" style={{ marginTop: '16px' }}>
+                    <div style={{ padding: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', width: '100%' }}>
+                      <p style={{ color: '#ef4444', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>
+                        ⏳ Hợp đồng sắp hết hạn! Bạn đang trong thời gian ưu tiên giữ chỗ cho học kỳ tới.
+                      </p>
+                      <button className="btn btn-primary" onClick={handleRenew} style={{ width: '100%' }}>
+                        Gia hạn ngay (3 tháng)
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Room Assets Info */}
+            <div className="card room-assets-card">
+              <h2 className="card-title">📺 Tài sản trong phòng</h2>
+              <div className="asset-list">
+                {roomAssets.length === 0 ? (
+                  <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    Chưa có thiết bị nào được ghi nhận cho phòng này.
+                  </p>
+                ) : (
+                  roomAssets.map(asset => {
+                    const statusColors: any = {
+                      GOOD: 'var(--color-success)',
+                      DAMAGED: 'var(--color-danger)',
+                      REPAIRING: 'var(--color-warning)',
+                      REPLACED: 'var(--color-text-muted)'
+                    };
+                    const statusLabels: any = {
+                      GOOD: 'Tốt',
+                      DAMAGED: 'Hỏng hóc',
+                      REPAIRING: 'Đang sửa',
+                      REPLACED: 'Đã thay thế'
+                    };
+                    return (
+                      <div key={asset.id} className="asset-item">
+                        <div className="asset-item__info">
+                          <span className="asset-item__name">{asset.name}</span>
+                          <span className="asset-item__code">({asset.code})</span>
+                          <span 
+                            className="asset-item__status" 
+                            style={{ color: statusColors[asset.status] || 'white' }}
+                          >
+                            • {statusLabels[asset.status] || asset.status}
+                          </span>
+                        </div>
+                        <button 
+                          className="btn-report-issue"
+                          onClick={() => navigate(`/maintenance?assetId=${asset.id}`)}
+                          title="Báo cáo sự cố thiết bị này"
+                        >
+                          ⚠️ Báo hỏng
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                <button 
+                  className="btn btn-outline" 
+                  style={{ width: '100%', fontSize: '0.85rem' }}
+                  onClick={() => navigate('/maintenance')}
+                >
+                  Báo cáo sự cố khác
+                </button>
               </div>
             </div>
           </div>

@@ -17,7 +17,13 @@ export class PaymentRepository {
     expiredAt?: Date;
     rawResponse?: string;
   }) {
-    return prisma.paymentTransaction.create({ data });
+    const { orderCode, ...rest } = data;
+    return prisma.paymentTransaction.create({ 
+      data: {
+        ...rest,
+        orderCode: BigInt(orderCode)
+      } 
+    });
   }
 
   // Tìm theo ID
@@ -40,9 +46,9 @@ export class PaymentRepository {
   }
 
   // Tìm theo orderCode (PayOS dùng orderCode làm key)
-  async findByOrderCode(orderCode: number) {
+  async findByOrderCode(orderCode: number | bigint) {
     return prisma.paymentTransaction.findUnique({
-      where: { orderCode },
+      where: { orderCode: BigInt(orderCode) },
       include: {
         invoice: {
           include: {

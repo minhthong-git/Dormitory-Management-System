@@ -19,6 +19,8 @@ export interface User {
     status?: string;
     faculty?: string;
     major?: string;
+    course?: string;
+    dateOfBirth?: string;
   };
 }
 
@@ -77,7 +79,8 @@ export interface Contract {
   price: number;
   deposit: number;
   monthlyFee: number;
-  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING' | 'REJECTED';
+  status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING' | 'AWAITING_PAYMENT' | 'REJECTED';
+  renewalStatus: 'NONE' | 'PRIORITY' | 'EXPIRED_PRIORITY' | 'RENEWED';
   createdAt: string;
   updatedAt: string;
   student?: Student;
@@ -156,6 +159,10 @@ export interface UpdateProfilePayload {
   phone?: string;
   avatarUrl?: string;
   gender?: string;
+  dateOfBirth?: string;
+  major?: string;
+  faculty?: string;
+  course?: string;
 }
 
 export interface ChangePasswordPayload {

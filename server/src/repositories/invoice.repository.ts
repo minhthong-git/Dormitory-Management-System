@@ -20,13 +20,37 @@ function mapContractUser(invoice: any): any {
 export class InvoiceRepository {
   async checkAndUpdateOverdueInvoices() {
     const now = new Date();
-    await prisma.invoice.updateMany({
+    
+    // Find overdue invoices
+    const overdueInvoices = await prisma.invoice.findMany({
       where: {
         paymentStatus: { in: ['UNPAID', 'PARTIAL'] },
         dueDate: { lt: now }
       },
-      data: {
-        paymentStatus: 'OVERDUE'
+      include: { contract: true }
+    });
+
+    if (overdueInvoices.length === 0) return;
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update invoices to OVERDUE
+      await tx.invoice.updateMany({
+        where: { id: { in: overdueInvoices.map(i => i.id) } },
+        data: { paymentStatus: 'OVERDUE' }
+      });
+
+      // 2. Revert AWAITING_PAYMENT contracts and beds
+      for (const invoice of overdueInvoices) {
+        if (invoice.contractId && invoice.contract?.status === 'AWAITING_PAYMENT') {
+          await tx.contract.update({
+            where: { id: invoice.contractId },
+            data: { status: 'REJECTED' } // Cancel contract
+          });
+          await tx.bed.update({
+            where: { id: invoice.contract.bedId },
+            data: { status: 'AVAILABLE' }
+          });
+        }
       }
     });
   }
@@ -209,13 +233,11 @@ export class InvoiceRepository {
 
   async findByRoomMonthYear(roomId: string, month: number, year: number) {
     await this.checkAndUpdateOverdueInvoices();
-    return prisma.invoice.findUnique({
+    return prisma.invoice.findFirst({
       where: {
-        roomId_billingMonth_billingYear: {
-          roomId,
-          billingMonth: month,
-          billingYear: year
-        }
+        roomId,
+        billingMonth: month,
+        billingYear: year
       }
     });
   }

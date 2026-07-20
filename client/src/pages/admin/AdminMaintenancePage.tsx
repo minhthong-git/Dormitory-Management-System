@@ -304,7 +304,7 @@ const AdminMaintenancePage: React.FC = () => {
 
           {(filterPriority || filterRoomId || filterStaffId) && (
             <div className="filter-input-group" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn-cancel" onClick={handleResetFilters}>
+              <button className="btn btn-outline" onClick={handleResetFilters}>
                 Xóa lọc
               </button>
             </div>
@@ -318,10 +318,10 @@ const AdminMaintenancePage: React.FC = () => {
           <div className="spinner" />
         </div>
       ) : requests.length === 0 ? (
-        <div className="empty-state" style={{ padding: '6rem 2rem', textAlign: 'center', background: 'var(--color-surface, #1F2937)', border: '1px solid var(--color-border, rgba(255, 255, 255, 0.07))', borderRadius: 16 }}>
+        <div className="empty-state" style={{ padding: '6rem 2rem', textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
           <span style={{ fontSize: '3rem' }}>🔧</span>
-          <h3 style={{ marginTop: '1rem', color: 'var(--color-text, #f1f5f9)' }}>Không có yêu cầu sửa chữa nào</h3>
-          <p style={{ color: 'var(--color-text-muted, #64748b)' }}>Hệ thống không ghi nhận báo cáo sự cố nào khớp với bộ lọc.</p>
+          <h3 style={{ marginTop: '1rem', color: 'var(--color-text)' }}>Không có yêu cầu sửa chữa nào</h3>
+          <p style={{ color: 'var(--color-text-muted)' }}>Hệ thống không ghi nhận báo cáo sự cố nào khớp với bộ lọc.</p>
         </div>
       ) : (
         <>
@@ -458,10 +458,10 @@ const AdminMaintenancePage: React.FC = () => {
       {/* Modal 1: Phân công nhân viên sửa chữa */}
       {isAssignModalOpen && selectedTicket && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: '450px' }}>
+          <div className="modal-content" style={{ maxWidth: '450px' }}>
             <div className="modal-header">
               <h2 className="modal-title">Phân công Sửa chữa</h2>
-              <button className="modal-close-btn" onClick={() => setIsAssignModalOpen(false)}>
+              <button className="modal-close" onClick={() => setIsAssignModalOpen(false)}>
                 &times;
               </button>
             </div>
@@ -491,11 +491,11 @@ const AdminMaintenancePage: React.FC = () => {
                   </select>
                 </div>
               </div>
-              <div className="form-actions">
-                <button type="button" className="btn-cancel" onClick={() => setIsAssignModalOpen(false)}>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setIsAssignModalOpen(false)}>
                   Hủy
                 </button>
-                <button type="submit" className="btn-submit">
+                <button type="submit" className="btn btn-primary">
                   Xác nhận giao
                 </button>
               </div>
@@ -507,12 +507,12 @@ const AdminMaintenancePage: React.FC = () => {
       {/* Modal 2: Cập nhật Trạng thái kèm Ghi chú kỹ thuật (Complete/Cancel) */}
       {isStatusModalOpen && selectedTicket && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: '480px' }}>
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
             <div className="modal-header">
               <h2 className="modal-title">
                 {newStatus === 'RESOLVED' ? 'Hoàn thành Sửa chữa' : 'Hủy bỏ Yêu cầu'}
               </h2>
-              <button className="modal-close-btn" onClick={() => setIsStatusModalOpen(false)}>
+              <button className="modal-close" onClick={() => setIsStatusModalOpen(false)}>
                 &times;
               </button>
             </div>
@@ -540,19 +540,20 @@ const AdminMaintenancePage: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="form-actions">
-                <button type="button" className="btn-cancel" onClick={() => setIsStatusModalOpen(false)}>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setIsStatusModalOpen(false)}>
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="btn-submit"
+                  className={`btn ${newStatus === 'RESOLVED' ? 'btn-primary' : 'btn-outline'}`}
                   style={{
                     background:
                       newStatus === 'RESOLVED'
-                        ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                        : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                    boxShadow: 'none',
+                        ? 'var(--color-success)'
+                        : 'var(--color-surface-2)',
+                    color: newStatus === 'RESOLVED' ? '#fff' : 'var(--color-text)',
+                    border: 'none',
                   }}
                 >
                   Xác nhận
