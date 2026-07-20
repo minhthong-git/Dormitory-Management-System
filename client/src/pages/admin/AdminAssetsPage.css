@@ -134,15 +134,23 @@
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-size: var(--font-size-sm);
-  color: var(--color-text);
+  color: var(--color-text, #f8fafc) !important;
   outline: none;
-  background-color: var(--color-surface-2);
+  background-color: var(--color-surface-2, #1e293b) !important;
   transition: all var(--transition);
 }
 
-.filter-control:focus {
+.filter-control option {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+.filter-control:focus,
+.filter-control:active {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.15);
+  background-color: var(--color-surface-2, #1e293b) !important;
+  color: var(--color-text, #f8fafc) !important;
 }
 
 /* Asset Table */

@@ -12,12 +12,6 @@
 }
 
 .maint-page__title {
-<<<<<<< HEAD
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 var(--space-xs) 0;
-=======
   font-size: 1.875rem;
   font-weight: 800;
   color: #0f172a;
@@ -26,7 +20,6 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0 0 0.25rem 0;
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
 }
 
 .maint-page__subtitle {
@@ -259,26 +252,25 @@
 
 /* Custom Modal notes output */
 .modal-info-box {
-  background-color: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  margin-bottom: var(--space-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 1rem 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  font-size: 0.875rem !important;
+  color: #334155 !important;
 }
 
 .modal-info-box p {
-<<<<<<< HEAD
-  margin: var(--space-xs) 0;
-=======
-  margin: 0.25rem 0;
-  color: #334155 !important;
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
+  margin: 0.35rem 0 !important;
+  color: #475569 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
 }
 
 .modal-info-box p strong {
   color: #0f172a !important;
+  font-weight: 600 !important;
 }
 
 /* Control Panel & Filters */
@@ -312,20 +304,22 @@
 }
 
 .filter-control {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border, #cbd5e1);
   border-radius: 10px;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
-  color: #1e293b;
+  color: var(--color-text, #f8fafc) !important;
   outline: none;
-  background-color: #f8fafc;
+  background-color: var(--color-surface-2, #1e293b) !important;
   transition: all 0.2s ease;
 }
 
-.filter-control:focus {
-  border-color: #5b5fef;
-  box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.15);
-  background-color: #ffffff;
+.filter-control:focus,
+.filter-control:active {
+  border-color: #5b5fef !important;
+  box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.15) !important;
+  background-color: var(--color-surface-2, #1e293b) !important;
+  color: var(--color-text, #f8fafc) !important;
 }
 
 /* Modal Form Styles */
@@ -344,49 +338,78 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+.modal-content,
 .modal-card {
-  background: #ffffff !important;
-  color: #1e293b !important;
-  border-radius: 20px;
+  background: var(--color-surface, #1e293b) !important;
+  color: var(--color-text, #f8fafc) !important;
+  border: 1px solid var(--color-border, #334155) !important;
+  border-radius: 20px !important;
   width: 100%;
-  max-width: 550px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  max-width: 500px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #ffffff !important;
+  padding: 1.25rem 1.5rem !important;
+  border-bottom: 1px solid var(--color-border, #334155) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  background: transparent !important;
 }
 
 .modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #0f172a !important; /* Force title text to be dark black */
-  margin: 0;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: var(--color-text, #f8fafc) !important;
+  margin: 0 !important;
 }
 
+.modal-close,
 .modal-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #94a3b8;
-  transition: color 0.2s ease;
+  background: none !important;
+  border: none !important;
+  font-size: 1.5rem !important;
+  cursor: pointer !important;
+  color: var(--color-text-muted, #94a3b8) !important;
+  transition: color 0.2s ease !important;
+  line-height: 1 !important;
+  padding: 0 4px !important;
 }
 
+.modal-close:hover,
 .modal-close-btn:hover {
-  color: #334155;
+  color: #ffffff !important;
 }
 
 .modal-body {
-  padding: 1.5rem;
-  background: #ffffff !important;
+  padding: 1.5rem !important;
+  background: transparent !important;
+}
+
+.modal-info-box {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid var(--color-border, #334155) !important;
+  border-radius: 12px !important;
+  padding: 1rem 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  font-size: 0.875rem !important;
+  color: #cbd5e1 !important;
+}
+
+.modal-info-box p {
+  margin: 0.35rem 0 !important;
+  color: #cbd5e1 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+}
+
+.modal-info-box p strong {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
 }
 
 .form-group {
@@ -397,56 +420,60 @@
 }
 
 .form-group label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #334155 !important; /* Force label text to be dark */
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text-muted, #cbd5e1) !important;
 }
 
 .form-input {
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid var(--color-border, #334155) !important;
   border-radius: 10px !important;
   padding: 0.65rem 0.875rem !important;
   font-size: 0.875rem !important;
   outline: none !important;
-  background-color: #ffffff !important; /* Force white background */
-  color: #0f172a !important; /* Force dark text */
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  color: var(--color-text, #f8fafc) !important;
   transition: all 0.2s ease !important;
 }
 
 .form-input:focus {
-  border-color: #5b5fef !important;
-  box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.15) !important;
+  border-color: #6366f1 !important;
+  background-color: rgba(15, 23, 42, 1) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+  color: #ffffff !important;
 }
 
-/* Fix dropdown option text color in some browsers */
 .form-input option {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
+  background-color: #1e293b !important;
+  color: #ffffff !important;
 }
 
+.modal-footer,
 .form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem 1.5rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #ffffff !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 1.125rem 1.5rem !important;
+  border-top: 1px solid var(--color-border, #334155) !important;
+  background: rgba(15, 23, 42, 0.3) !important;
 }
 
 .btn-cancel {
-  background: #f1f5f9 !important;
-  border: none !important;
-  color: #475569 !important;
+  background: #334155 !important;
+  border: 1px solid #475569 !important;
+  color: #f8fafc !important;
   padding: 0.625rem 1.25rem !important;
   border-radius: 10px !important;
   font-weight: 600 !important;
   font-size: 0.875rem !important;
   cursor: pointer !important;
-  transition: background-color 0.2s ease !important;
+  transition: all 0.2s ease !important;
 }
 
 .btn-cancel:hover {
-  background: #e2e8f0 !important;
+  background: #475569 !important;
+  color: #ffffff !important;
 }
 
 .btn-submit {
@@ -458,13 +485,22 @@
   font-weight: 600 !important;
   font-size: 0.875rem !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 10px rgba(91, 95, 239, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(91, 95, 239, 0.3) !important;
   transition: all 0.2s ease !important;
 }
 
 .btn-submit:hover {
   transform: translateY(-1px) !important;
-  box-shadow: 0 6px 14px rgba(91, 95, 239, 0.3) !important;
+  box-shadow: 0 6px 16px rgba(91, 95, 239, 0.4) !important;
+}
+
+.btn-submit--success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.btn-submit--success:hover {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
 }
 
 /* Animations */

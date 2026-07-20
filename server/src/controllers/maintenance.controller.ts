@@ -191,18 +191,12 @@ export const assignStaff = async (req: Request, res: Response, next: NextFunctio
       },
     });
 
-    const notifPriority = (request.priority as NotificationPriority) || 'MEDIUM';
-
     // 4. Gửi thông báo cho sinh viên báo cáo lỗi
     if (request.student.userId) {
       await notificationService.send({
         userId: request.student.userId,
         type: 'SYSTEM',
-<<<<<<< HEAD
-        priority: notifPriority,
-=======
         priority: request.priority as any,
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
         title: `Phân công sửa chữa — Phòng ${request.room.roomNumber}`,
         message: `Yêu cầu "${request.title}" của bạn đã được giao cho kỹ thuật viên ${updated.staff?.fullName}.`,
         referenceId: request.id,
@@ -214,11 +208,7 @@ export const assignStaff = async (req: Request, res: Response, next: NextFunctio
     await notificationService.send({
       userId: staffId,
       type: 'SYSTEM',
-<<<<<<< HEAD
-      priority: notifPriority,
-=======
       priority: request.priority as any,
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
       title: `Nhiệm vụ sửa chữa mới — Phòng ${request.room.roomNumber}`,
       message: `Bạn được phân công sửa chữa lỗi "${request.title}" tại phòng ${request.room.roomNumber}.`,
       referenceId: request.id,
@@ -297,16 +287,10 @@ export const updateRequestStatus = async (req: Request, res: Response, next: Nex
       if (status === 'RESOLVED') statusLabel = 'Đã hoàn thành';
       if (status === 'CANCELLED') statusLabel = 'Đã bị hủy';
 
-      const notifPriority = (request.priority as NotificationPriority) || 'MEDIUM';
-
       await notificationService.send({
         userId: request.student.userId,
         type: 'SYSTEM',
-<<<<<<< HEAD
-        priority: notifPriority,
-=======
         priority: request.priority as any,
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
         title: `Cập nhật trạng thái sửa chữa — Phòng ${request.room.roomNumber}`,
         message: `Yêu cầu "${request.title}" của bạn hiện ở trạng thái: [${statusLabel}]. ${notes ? `Ghi chú kỹ thuật: "${notes}"` : ''}`,
         referenceId: request.id,
@@ -320,18 +304,6 @@ export const updateRequestStatus = async (req: Request, res: Response, next: Nex
   }
 };
 
-<<<<<<< HEAD
-// ── POST /api/maintenance/:id/rate ─────────────────────────────
-export const rateRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { rating, feedback } = req.body;
-
-    const request = await prisma.maintenanceRequest.findUnique({
-      where: { id },
-      include: {
-        student: true,
-=======
 // ── POST /api/maintenance/:id/feedback ──────────────────────────
 // Sinh viên gửi đánh giá chất lượng sửa chữa (rating 1-5 sao, feedback tối đa 200 ký tự)
 export const submitRequestFeedback = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -360,28 +332,10 @@ export const submitRequestFeedback = async (req: Request, res: Response, next: N
     const request = await prisma.maintenanceRequest.findUnique({
       where: { id },
       include: {
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
         room: { select: { roomNumber: true } },
       },
     });
 
-<<<<<<< HEAD
-    if (!request) throw new AppError('Yêu cầu không tồn tại', 404);
-    if (request.student.userId !== req.user!.sub) throw new AppError('Bạn không có quyền đánh giá', 403);
-    if (request.status !== 'RESOLVED') throw new AppError('Chỉ có thể đánh giá khi đã hoàn thành', 400);
-
-    const updated = await prisma.maintenanceRequest.update({
-      where: { id },
-      data: { rating, feedback },
-    });
-
-    // Gửi thông báo cho Admin & Staff khi sinh viên đánh giá dịch vụ
-    await notificationService.sendToStaff({
-      type: 'SYSTEM',
-      priority: 'LOW',
-      title: `Đánh giá dịch vụ sửa chữa — Phòng ${request.room?.roomNumber || 'N/A'}`,
-      message: `Sinh viên ${request.student.fullName} đã đánh giá ${rating}/5★ cho yêu cầu "${request.title}". ${feedback ? `Ý kiến: "${feedback}"` : ''}`,
-=======
     if (!request) {
       throw new AppError('Yêu cầu sửa chữa không tồn tại', 404);
     }
@@ -409,21 +363,14 @@ export const submitRequestFeedback = async (req: Request, res: Response, next: N
       priority: request.priority as any,
       title: `Đánh giá sửa chữa — Phòng ${request.room.roomNumber}`,
       message: `Sinh viên ${student.fullName} đã đánh giá ${ratingNum} sao cho sự cố "${request.title}". Phản hồi: "${feedback ? feedback.trim() : 'Không có ý kiến thêm'}".`,
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
       referenceId: request.id,
       referenceType: 'SYSTEM',
     });
 
-<<<<<<< HEAD
-    sendSuccess(res, updated, 'Đánh giá thành công');
-=======
     sendSuccess(res, updated, 'Gửi đánh giá thành công');
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
   } catch (err) {
     next(err);
   }
 };
-<<<<<<< HEAD
 
-=======
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
+export const rateRequest = submitRequestFeedback;

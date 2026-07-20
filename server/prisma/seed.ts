@@ -166,39 +166,6 @@ async function main() {
       assets.push(fan);
     }
 
-<<<<<<< HEAD
-    // 4 Light bulbs
-    for (let j = 1; j <= 4; j++) {
-      const light = await prisma.asset.create({
-        data: {
-          name: 'Bóng đèn',
-          code: `LT-${room.roomNumber}-0${j}`,
-          type: 'LIGHT',
-          status: 'GOOD',
-          description: 'Bóng đèn tuýp LED 1.2m 20W',
-          roomId: room.id,
-        },
-      });
-      assets.push(light);
-    }
-
-    // 4 Lockers
-    for (let j = 1; j <= 4; j++) {
-      const locker = await prisma.asset.create({
-        data: {
-          name: 'Tủ locker',
-          code: `LK-${room.roomNumber}-0${j}`,
-          type: 'LOCKER',
-          status: 'GOOD',
-          description: 'Tủ locker cá nhân có khóa',
-          roomId: room.id,
-        },
-      });
-      assets.push(locker);
-    }
-
-    // 4 Power sockets
-=======
     // Lightbulbs (Bóng đèn)
     for (let j = 1; j <= 4; j++) {
       const lb = await prisma.asset.create({
@@ -215,71 +182,49 @@ async function main() {
     }
 
     // Locker (Tủ locker)
-    const locker = await prisma.asset.create({
-      data: {
-        name: 'Tủ locker',
-        code: `LK-${room.roomNumber}-01`,
-        type: 'LOCKER',
-        status: 'GOOD',
-        description: 'Tủ locker sắt 4 ngăn Hòa Phát',
-        roomId: room.id,
-      },
-    });
-    assets.push(locker);
+    for (let j = 1; j <= 4; j++) {
+      const locker = await prisma.asset.create({
+        data: {
+          name: 'Tủ locker',
+          code: `LK-${room.roomNumber}-0${j}`,
+          type: 'LOCKER',
+          status: 'GOOD',
+          description: 'Tủ locker cá nhân có khóa',
+          roomId: room.id,
+        },
+      });
+      assets.push(locker);
+    }
 
     // Water tap (Vòi nước)
-    const tap = await prisma.asset.create({
-      data: {
-        name: 'Vòi nước',
-        code: `WT-${room.roomNumber}-01`,
-        type: 'WATER_TAP',
-        status: 'GOOD',
-        description: 'Vòi nước inox 304',
-        roomId: room.id,
-      },
-    });
-    assets.push(tap);
+    for (let j = 1; j <= 2; j++) {
+      const tap = await prisma.asset.create({
+        data: {
+          name: 'Vòi nước',
+          code: `WT-${room.roomNumber}-0${j}`,
+          type: 'WATER_TAP',
+          status: 'GOOD',
+          description: 'Vòi nước inox 304',
+          roomId: room.id,
+        },
+      });
+      assets.push(tap);
+    }
 
     // Electrical sockets (Ổ điện)
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
     for (let j = 1; j <= 4; j++) {
       const socket = await prisma.asset.create({
         data: {
           name: 'Ổ điện',
-<<<<<<< HEAD
-          code: `SK-${room.roomNumber}-0${j}`,
-          type: 'POWER_SOCKET',
-          status: 'GOOD',
-          description: 'Ổ cắm điện đôi âm tường',
-=======
           code: `SO-${room.roomNumber}-0${j}`,
           type: 'POWER_SOCKET',
           status: 'GOOD',
           description: 'Ổ cắm điện âm tường Sino',
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
           roomId: room.id,
         },
       });
       assets.push(socket);
     }
-<<<<<<< HEAD
-
-    // 2 Water faucets
-    for (let j = 1; j <= 2; j++) {
-      const faucet = await prisma.asset.create({
-        data: {
-          name: 'Vòi nước',
-          code: `FC-${room.roomNumber}-0${j}`,
-          type: 'FAUCET',
-          status: 'GOOD',
-          description: 'Vòi nước inox 304 phòng tắm/rửa mặt',
-          roomId: room.id,
-        },
-      });
-      assets.push(faucet);
-    }
-=======
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
   }
   console.log(`✅ Created ${assets.length} assets.`);
 

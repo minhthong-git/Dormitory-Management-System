@@ -219,28 +219,16 @@ const AdminAssetsPage: React.FC = () => {
   };
 
   const typeLabel: Record<string, string> = {
-<<<<<<< HEAD
     AIR_CONDITIONER: 'Máy lạnh ❄️',
     DESK: 'Bàn học 📝',
     CHAIR: 'Ghế ngồi 🪑',
     FAN: 'Quạt máy 🌬️',
-<<<<<<< HEAD
-    LIGHT: 'Bóng đèn điện 💡',
+    LIGHT: 'Bóng đèn 💡',
+    LIGHTBULB: 'Bóng đèn 💡',
     LOCKER: 'Tủ locker 🔒',
     POWER_SOCKET: 'Ổ điện 🔌',
     FAUCET: 'Vòi nước 🚰',
-=======
-    LIGHTBULB: 'Bóng đèn 💡',
-    LOCKER: 'Tủ locker 🗄️',
     WATER_TAP: 'Vòi nước 🚰',
-    POWER_SOCKET: 'Ổ điện 🔌',
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
-=======
-    AIR_CONDITIONER: 'Máy lạnh',
-    DESK: 'Bàn học',
-    CHAIR: 'Ghế ngồi',
-    FAN: 'Quạt máy',
->>>>>>> origin/main
   };
 
   const statusBadgeClass = (status: string) => {
@@ -385,17 +373,10 @@ const AdminAssetsPage: React.FC = () => {
               <option value="DESK">Bàn học</option>
               <option value="CHAIR">Ghế</option>
               <option value="FAN">Quạt treo tường</option>
-<<<<<<< HEAD
-              <option value="LIGHT">Bóng đèn điện</option>
-              <option value="LOCKER">Tủ locker</option>
-              <option value="POWER_SOCKET">Ổ điện</option>
-              <option value="FAUCET">Vòi nước</option>
-=======
               <option value="LIGHTBULB">Bóng đèn</option>
               <option value="LOCKER">Tủ locker</option>
               <option value="WATER_TAP">Vòi nước</option>
               <option value="POWER_SOCKET">Ổ điện</option>
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
             </select>
           </div>
 
@@ -586,17 +567,10 @@ const AdminAssetsPage: React.FC = () => {
                         <option value="DESK">Bàn học</option>
                         <option value="CHAIR">Ghế</option>
                         <option value="FAN">Quạt treo tường</option>
-<<<<<<< HEAD
-                        <option value="LIGHT">Bóng đèn điện</option>
-                        <option value="LOCKER">Tủ locker</option>
-                        <option value="POWER_SOCKET">Ổ điện</option>
-                        <option value="FAUCET">Vòi nước</option>
-=======
                         <option value="LIGHTBULB">Bóng đèn</option>
                         <option value="LOCKER">Tủ locker</option>
                         <option value="WATER_TAP">Vòi nước</option>
                         <option value="POWER_SOCKET">Ổ điện</option>
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
                       </select>
                     </div>
 

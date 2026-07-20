@@ -17,7 +17,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   isAdmin,
   onViewDetail,
   onMarkAsPaid,
-  onDelete,
+  onDelete: _onDelete,
   currentPage,
   totalPages,
   onPageChange,

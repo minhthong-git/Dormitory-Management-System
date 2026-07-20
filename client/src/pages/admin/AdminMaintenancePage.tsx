@@ -4,17 +4,12 @@ import { userApi } from '@/api/user.api';
 import { roomApi } from '@/api/room.api';
 import type { MaintenanceRequest, User, Room } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-<<<<<<< HEAD
-=======
 import { useNotifications } from '@/context/NotificationContext';
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
 import './AdminMaintenancePage.css';
 import './AdminRoomsPage.css';
 
 const AdminMaintenancePage: React.FC = () => {
   const { user } = useAuth();
-<<<<<<< HEAD
-=======
   const { notifications, markAsRead } = useNotifications();
 
   // Lọc các thông báo đánh giá bảo trì chưa đọc
@@ -22,7 +17,6 @@ const AdminMaintenancePage: React.FC = () => {
     notif => !notif.isRead && 
     (notif.title.includes('Đánh giá sửa chữa') || notif.message.includes('đã đánh giá'))
   );
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
   const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
   const [staffList, setStaffList] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -220,7 +214,7 @@ const AdminMaintenancePage: React.FC = () => {
       <div className="admin-page">
         <header className="admin-header">
           <div>
-            <h1 className="admin-header__title">Yêu cầu Sửa chữa</h1>
+            <h1 className="maint-page__title">Yêu cầu Sửa chữa</h1>
             <p className="admin-header__subtitle">
               Theo dõi và cập nhật trạng thái các yêu cầu bảo trì được phân công.
             </p>
@@ -395,14 +389,13 @@ const AdminMaintenancePage: React.FC = () => {
         {/* Modal: Cập nhật trạng thái (Hoàn thành / Hủy) */}
         {isStatusModalOpen && selectedTicket && (
           <div className="modal-overlay">
-            <div className="modal-content">
-              <button className="modal-close" onClick={() => setIsStatusModalOpen(false)}>×</button>
-              <h2 className="modal-title">
-                {newStatus === 'RESOLVED' ? 'Xác nhận Hoàn thành' : 'Hủy Yêu cầu'}
-              </h2>
-              <p style={{ marginBottom: '1rem', color: 'var(--color-text-muted)' }}>
-                Yêu cầu: <strong>{selectedTicket.title}</strong> - Phòng {selectedTicket.room?.roomNumber}
-              </p>
+            <div className="modal-content" style={{ maxWidth: '480px' }}>
+              <div className="modal-header">
+                <h2 className="modal-title">
+                  {newStatus === 'RESOLVED' ? 'Xác nhận Hoàn thành' : 'Hủy Yêu cầu'}
+                </h2>
+                <button className="modal-close" onClick={() => setIsStatusModalOpen(false)}>×</button>
+              </div>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 try {
@@ -416,19 +409,27 @@ const AdminMaintenancePage: React.FC = () => {
                   alert(err.response?.data?.message || 'Có lỗi xảy ra.');
                 }
               }}>
-                <div className="form-group">
-                  <label>Ghi chú kỹ thuật (Tùy chọn)</label>
-                  <textarea
-                    className="form-input"
-                    rows={3}
-                    value={techNotes}
-                    onChange={e => setTechNotes(e.target.value)}
-                    placeholder="Ghi chú về việc sửa chữa (đã thay thế linh kiện gì, lý do hủy...)"
-                  />
+                <div className="modal-body">
+                  <div className="modal-info-box">
+                    <p><strong>Yêu cầu:</strong> {selectedTicket.title}</p>
+                    <p><strong>Phòng:</strong> {selectedTicket.room?.roomNumber || 'Chưa rõ'}</p>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="staff-notes-input">Ghi chú kỹ thuật (Tùy chọn)</label>
+                    <textarea
+                      id="staff-notes-input"
+                      className="form-input"
+                      rows={3}
+                      value={techNotes}
+                      onChange={e => setTechNotes(e.target.value)}
+                      placeholder="Ghi chú về việc sửa chữa (đã thay thế linh kiện gì, lý do hủy...)"
+                    />
+                  </div>
                 </div>
-                <div className="modal-actions">
-                  <button type="button" className="btn btn-outline" onClick={() => setIsStatusModalOpen(false)}>Đóng</button>
-                  <button type="submit" className={newStatus === 'RESOLVED' ? 'btn btn-success' : 'btn btn-danger'}>Xác nhận</button>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-cancel" onClick={() => setIsStatusModalOpen(false)}>Đóng</button>
+                  <button type="submit" className={newStatus === 'RESOLVED' ? 'btn btn-submit btn-submit--success' : 'btn btn-cancel'}>Xác nhận</button>
                 </div>
               </form>
             </div>
@@ -667,15 +668,6 @@ const AdminMaintenancePage: React.FC = () => {
                     )}
 
                     {ticket.status === 'ASSIGNED' && (
-<<<<<<< HEAD
-                      <button
-                        className="btn-card btn-card--outline"
-                        style={{ width: '100%' }}
-                        onClick={() => openAssignModal(ticket)}
-                      >
-                        Đổi người
-                      </button>
-=======
                       <>
                         {/* Staff được phân công mới thấy nút Bắt đầu sửa */}
                         {user?.role === 'STAFF' && ticket.staffId === user.id && (
@@ -698,32 +690,29 @@ const AdminMaintenancePage: React.FC = () => {
                           </button>
                         )}
                       </>
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
                     )}
 
                     {ticket.status === 'IN_PROGRESS' && (
-                      <>
-                        {(user?.role === 'ADMIN' || (user?.role === 'STAFF' && ticket.staffId === user.id)) ? (
-                          <>
-                            <button
-                              className="btn-card btn-card--success"
-                              onClick={() => openStatusModal(ticket, 'RESOLVED')}
-                            >
-                              Hoàn thành
-                            </button>
-                            <button
-                              className="btn-card btn-card--outline"
-                              onClick={() => openStatusModal(ticket, 'CANCELLED')}
-                            >
-                              Hủy yêu cầu
-                            </button>
-                          </>
-                        ) : (
-                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f59e0b', textAlign: 'center', width: '100%', display: 'block', padding: '4px 0' }}>
-                            Đang sửa chữa bởi {ticket.staff?.fullName || 'nhân viên khác'}
-                          </span>
-                        )}
-                      </>
+                      user?.role === 'STAFF' && ticket.staffId === user.id ? (
+                        <>
+                          <button
+                            className="btn-card btn-card--success"
+                            onClick={() => openStatusModal(ticket, 'RESOLVED')}
+                          >
+                            Hoàn thành
+                          </button>
+                          <button
+                            className="btn-card btn-card--outline"
+                            onClick={() => openStatusModal(ticket, 'CANCELLED')}
+                          >
+                            Hủy yêu cầu
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', textAlign: 'center', width: '100%', display: 'block', padding: '6px 0' }}>
+                          Trạng thái: {statusLabel[ticket.status]}
+                        </span>
+                      )
                     )}
 
                     {(ticket.status === 'RESOLVED' || ticket.status === 'CANCELLED') && (
@@ -801,10 +790,10 @@ const AdminMaintenancePage: React.FC = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setIsAssignModalOpen(false)}>
+                <button type="button" className="btn btn-cancel" onClick={() => setIsAssignModalOpen(false)}>
                   Hủy
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-submit">
                   Xác nhận giao
                 </button>
               </div>
@@ -850,20 +839,12 @@ const AdminMaintenancePage: React.FC = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setIsStatusModalOpen(false)}>
+                <button type="button" className="btn btn-cancel" onClick={() => setIsStatusModalOpen(false)}>
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className={`btn ${newStatus === 'RESOLVED' ? 'btn-primary' : 'btn-outline'}`}
-                  style={{
-                    background:
-                      newStatus === 'RESOLVED'
-                        ? 'var(--color-success)'
-                        : 'var(--color-surface-2)',
-                    color: newStatus === 'RESOLVED' ? '#fff' : 'var(--color-text)',
-                    border: 'none',
-                  }}
+                  className={newStatus === 'RESOLVED' ? 'btn btn-submit btn-submit--success' : 'btn btn-cancel'}
                 >
                   Xác nhận
                 </button>

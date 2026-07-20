@@ -583,7 +583,7 @@ const AdminContractsPage: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>MSSV:</span>
-                  <strong style={{ color: 'var(--color-text)' }}>{selectedStudent.studentCode || selectedStudent.studentId}</strong>
+                  <strong style={{ color: 'var(--color-text)' }}>{selectedStudent.studentCode}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>Giới tính:</span>

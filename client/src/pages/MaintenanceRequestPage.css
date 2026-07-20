@@ -11,9 +11,12 @@
 }
 
 .student-maint__title {
-  font-size: 1.75rem;
+  font-size: 1.875rem;
   font-weight: 800;
-  color: var(--color-text, #f1f5f9);
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin: 0 0 0.25rem 0;
 }
 

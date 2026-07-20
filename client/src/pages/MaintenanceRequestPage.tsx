@@ -13,10 +13,7 @@ const MaintenanceRequestPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Rating State
-  const [ratingTicketId, setRatingTicketId] = useState<string | null>(null);
-  const [ratingValue, setRatingValue] = useState<number>(5);
-  const [ratingFeedback, setRatingFeedback] = useState<string>('');
+
 
   // Form State
   const [title, setTitle] = useState('');
@@ -137,23 +134,7 @@ const MaintenanceRequestPage: React.FC = () => {
     }
   };
 
-  const handleRateSubmit = async (e: React.FormEvent, id: string) => {
-    e.preventDefault();
-    if (!ratingValue) return;
 
-    try {
-      const res = await maintenanceApi.rate(id, { rating: ratingValue, feedback: ratingFeedback.trim() });
-      if (res.data.success) {
-        alert('Cảm ơn bạn đã đánh giá dịch vụ!');
-        setRatingTicketId(null);
-        setRatingFeedback('');
-        setRatingValue(5);
-        fetchRoomInfoAndTickets();
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Lỗi khi gửi đánh giá');
-    }
-  };
 
   // Format Helper
   const formatDateTime = (dateStr: string) => {
@@ -428,54 +409,6 @@ const MaintenanceRequestPage: React.FC = () => {
                   </button>
                 )}
 
-                {ticket.status === 'RESOLVED' && !(ticket as any).rating && ratingTicketId !== ticket.id && (
-                  <button
-                    className="btn-submit"
-                    style={{ marginTop: '1rem', padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-                    onClick={() => { setRatingTicketId(ticket.id); setRatingValue(5); setRatingFeedback(''); }}
-                  >
-                    ⭐ Đánh giá dịch vụ
-                  </button>
-                )}
-
-                {ticket.status === 'RESOLVED' && ratingTicketId === ticket.id && (
-                  <form onSubmit={(e) => handleRateSubmit(e, ticket.id)} style={{ marginTop: '1rem', background: 'var(--color-surface, #1F2937)', padding: '1rem', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', color: '#cbd5e1' }}>Mức độ hài lòng:</span>
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button 
-                          key={star} 
-                          type="button" 
-                          onClick={() => setRatingValue(star)} 
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: star <= ratingValue ? '#fbbf24' : '#475569' }}
-                        >
-                          ★
-                        </button>
-                      ))}
-                    </div>
-                    <textarea 
-                      className="form-input" 
-                      style={{ minHeight: '60px', marginBottom: '0.5rem' }} 
-                      placeholder="Nhận xét của bạn về chất lượng sửa chữa (tùy chọn)..."
-                      value={ratingFeedback}
-                      onChange={(e) => setRatingFeedback(e.target.value)}
-                    />
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button type="submit" className="btn-submit" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Gửi đánh giá</button>
-                      <button type="button" className="btn-cancel-ticket" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }} onClick={() => setRatingTicketId(null)}>Hủy</button>
-                    </div>
-                  </form>
-                )}
-
-                {ticket.status === 'RESOLVED' && (ticket as any).rating && (
-                  <div style={{ marginTop: '1rem', background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 'bold' }}>Đánh giá của bạn:</span>
-                      <span style={{ color: '#fbbf24', fontSize: '1.1rem' }}>{'★'.repeat((ticket as any).rating)}{'☆'.repeat(5 - (ticket as any).rating)}</span>
-                    </div>
-                    {(ticket as any).feedback && <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>"{ (ticket as any).feedback }"</p>}
-                  </div>
-                )}
               </article>
             ))
           )}

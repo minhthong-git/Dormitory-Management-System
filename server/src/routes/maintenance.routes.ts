@@ -6,11 +6,8 @@ import {
   getAllRequests,
   assignStaff,
   updateRequestStatus,
-<<<<<<< HEAD
-  rateRequest,
-=======
   submitRequestFeedback,
->>>>>>> 0cdf79adb91d46e99ede542ad35137d828dbee8b
+  rateRequest,
 } from '@/controllers/maintenance.controller';
 
 const router = Router();

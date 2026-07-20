@@ -182,6 +182,11 @@ video {
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
+select option {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
 .form-error-banner {
   padding: 10px 14px;
   background: rgba(239, 68, 68, 0.15);
@@ -598,6 +603,8 @@ video {
 .form-input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.2);
+  background-color: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
 }
 .form-control:disabled,
 .form-input:disabled {
